@@ -1,13 +1,13 @@
 Package: metricshelpr
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Make Working with Bibliometric Data Easier
+Version: 0.0.0.900
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Kleber",
+           family = "Neves",
            role = c("aut", "cre"),
            email = "first.last@example.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: What license it uses
+Description: This package contains a bunch of helper functions I implemented in the course of working with bibliometric data, in order to facilitate my own research.
+License: GNU GPLv3
 Encoding: UTF-8
 LazyData: true
