@@ -1,146 +1,92 @@
-make.citnet = function(M) {
-  cat("Building edges ...\n")
-  histResults = make.hist.citation.net(M, min.citations = 1, sep = ";")
-  cat("Making graph ...\n")
-  ADJ = as.matrix(histResults$NetMatrix)
-  NET = graph_from_adjacency_matrix(ADJ, mode = "directed", diag = F)
-  cat("Simplifying network ...\n")
-  NET = igraph::simplify(NET, remove.multiple = T, remove.loops = T)
-  NET
-}
+# Pajek file reader: obtains the main path saved from Pajek
+read_main_path = function (fname, net) {
+  # Adapted from function *read_net*, from Jonathan H. Morgan (2019) - http://mrvar.fdv.uni-lj.si/pajek/R/RMorgan.htm
+  require("igraph")
+  read_net <- function(net_file) {
+    net <- readLines(net_file)
 
-make.net.for.pajek = function (NET) {
-  cat("Simplifying network ...\n")
-  NET = simplify(NET, remove.multiple = T, remove.loops = T)
-  # browser()
-  tries = 0
-  while (!is_dag(NET) & tries < 10) {
-    removed = F
-    for (size in 2:4) {
-      w = rep(0, 4)
-      m = as_adjacency_matrix(NET, sparse = T)
-      mm = m
-      for (xp in 2:4) {
-        mm = mm %*% m
-        w[xp] = sum(diag(mm))
-      }
+    #Determining the length of the resulting nodes file
+    vertices <- net[[1]]
+    vertices <- strsplit(as.character(vertices),' ')
+    vertices <- lapply(vertices, function(x) x[x != ""])
+    vertices <- as.numeric(vertices[[1]][[2]])
 
-      if (w[size] > 0) {
-        cat(paste0("Finding citation loops of size ", size," ...\n"))
-        loops = find_cycles2(NET, size)
+    #Need to account for the fact that meta-information is in the file
+    v_num <- vertices + 1
 
-        cat(paste0("Found ", length(loops), " loops.\n"))
-        if (length(loops) > 0) {
-          cat(paste0("Removing citation loops of size ", size," ...\n"))
-          NET = make_loops_into_families(loops, NET)
+    #Extracting the nodes list from the network file
+    nodes <- net[2:v_num]
+    nodes <- trim(nodes)
 
-          NET = igraph::simplify(NET, remove.multiple = T, remove.loops = T)
-          NET = delete.vertices(NET, degree(NET) == 0)
-          removed = T
-          break
-        }
-      }
+    nodes <- strsplit(as.character(nodes),' ')
+    nodes <- lapply(nodes, function(x) x[x != ""])
+
+    shapes <- nodes
+    for (i in seq_along(shapes)){
+      shapes[[i]] <- nodes[[i]][-c(1:5)]
     }
-    if (!removed) {
-      tries = tries + 1
+
+    shapes <- lapply(shapes, function(x) paste(x,collapse=" "))
+
+    for (i in seq_along(nodes)){
+      nodes[[i]] <- nodes[[i]][1:5]
     }
+
+    nodes <-  as.data.frame(matrix(unlist(nodes), nrow = length(nodes), byrow = TRUE), stringsAsFactors = FALSE)
+    colnames(nodes) <- c('ID', 'Label', 'x-coord', 'y-coord', 'z-coord')
+
+    shapes <-  as.data.frame(matrix(unlist(shapes), nrow = length(shapes), byrow = TRUE),  stringsAsFactors = FALSE)
+    colnames(shapes) <- c('shapes information')
+
+    nodes <- cbind(nodes, shapes)
+
+    #Removing shape information if there no information
+    nodes[nodes==""] <- NA
+    nodes <- nodes[, colSums(is.na(nodes)) == 0]
+
+    rm(shapes, i)
+
+    #Creating Edges File
+    vertices <- (vertices + 1)
+
+    edges <- net[-c(1:vertices)]
+
+    `Tie Type` <- edges[[1]]
+
+    edges <- edges[-c(1)]
+    edges <- trim(edges)
+
+    edges <- strsplit(as.character(edges),' ')
+    edges <- lapply(edges, function(x) x[x != ""])
+
+    edges <-  as.data.frame(matrix(unlist(edges), nrow = length(edges), byrow = TRUE), stringsAsFactors = FALSE)
+    colnames(edges) <- c('Person i', 'Person j', 'Weight')
+
+    #Removing edge color information as it adds little value when importing data
+    edges <- edges[-c(4:5)]
+
+    edges$`Tie Type` <- `Tie Type`
+
+    rm(net, `Tie Type`)
+
+    #writing objects to the Global Environment
+    return (list(nodes = nodes, edges = edges))
   }
 
-  if (!is_dag(NET)) {
-    warning("Warning: network still contains loops (not a DAG).")
-  }
+  x = read_net(fname)
+  vertices = x$nodes
+  ties = x$edges
+  rm(x)
 
-  cat("Saving network ...\n")
-  write_graph(NET, "./Historical Citation Net.gml", format = "GML")
-  write_graph(NET, "./Historical Citation Net.net", format = "pajek")
+  vertices$Node = as.numeric(gsub('v|\"', "", vertices$Label))
 
-  NET
-}
+  ties$Source = vertices$Node[as.numeric(ties$`Person i`)]
+  ties$Target = vertices$Node[as.numeric(ties$`Person j`)]
+  main_ties = c(rbind(ties$Source,ties$Target))
 
-find_cycles = function(g, size) {
-  Cycles = NULL
-  if (size == 2) {
-    for(v1 in V(g)) {
-      if (v1 %% 100 == 0) cat(paste0("Articles analyzed ", v1,"\n"))
-      nei1 = neighbors(g, v1, mode="out")
-      nei1 = nei1[nei1 > v1]
-      for(v2 in nei1) {
-        nei2 = neighbors(g, v2, mode="out")
-        if (v1 %in% nei2) {
-          Cycles = c(Cycles, list(c(v1,v2)))
-        }
-      }
-    }
-    Cycles = unique(
-      lapply(Cycles, function (x) {
-        unique(sort(unlist(x)))
-      })
-    )
-  } else if (size == 3) {
-    for(v1 in V(g)) {
-      if (v1 %% 100 == 0) cat(paste0("Articles analyzed ", v1,"\n"))
-      nei1 = neighbors(g, v1, mode="out")
-      nei1 = nei1[nei1 > v1]
-      for(v2 in nei1) {
-        nei2 = neighbors(g, v2, mode="out")
-        nei2 = nei2[nei2 > v2]
-        for(v3 in nei2) {
-          nei3 = neighbors(g, v3, mode="out")
-          if (v1 %in% nei3) {
-            Cycles = c(Cycles, list(c(v1,v2,v3)))
-          }
-        }
-      }
-    }
-    Cycles = unique(
-      lapply(Cycles, function (x) {
-        unique(sort(unlist(x)))
-      })
-    )
-  } else {
-    for(v1 in V(g)) {
-      if (v1 %% 100 == 0) cat(paste0("Articles analyzed ", v1,"\n"))
-      nei1 = neighbors(g, v1, mode="out")
-      nei1 = nei1[nei1 > v1]
-      for(v2 in nei1) {
-        nei2 = neighbors(g, v2, mode="out")
-        nei2 = nei2[nei2 > v2]
-        for(v3 in nei2) {
-          nei3 = neighbors(g, v3, mode="out")
-          nei3 = nei3[nei3 > v3]
-          for(v4 in nei3) {
-            nei4 = neighbors(g, v4, mode="out")
-            if (v1 %in% nei4) {
-              Cycles = c(Cycles, list(c(v1,v2,v3,v4)))
-            }
-          }
-        }
-      }
-    }
-    Cycles = unique(
-      lapply(Cycles, function (x) {
-        unique(sort(unlist(x)))
-      })
-    )
-  }
-  Cycles
-}
+  main_path_nodes = V(net)[vertices$Node]
+  main_path_edges = get.edge.ids(net, vp = main_ties, directed = T)
 
-family_attr_comb = function(x) {
-  paste(x, collapse = "---")
-}
-
-make_loops_into_families = function (loops, g) {
-  contraction = 1:vcount(g)
-  contracted = numeric(0)
-
-  for (loop in loops) {
-    contraction[loop] = loop[1]
-    contracted = c(contracted, loop[2:length(loop)])
-  }
-  g = contract(g, mapping = contraction, vertex.attr.comb = family_attr_comb)
-  contracted = contracted[contracted %in% V(g)]
-  g = delete.vertices(g, V(g)$name[contracted])
-
-  g
+  main_path = subgraph.edges(net, main_path_edges, delete.vertices = T)
+  main_path
 }
