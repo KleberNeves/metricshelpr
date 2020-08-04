@@ -8,6 +8,9 @@ Authors@R:
            email = "first.last@example.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: This package contains a bunch of helper functions I implemented in the course of working with bibliometric data, in order to facilitate my own research.
-License: GNU GPLv3
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 7.0.2
+Imports: 
+    bibliometrix
