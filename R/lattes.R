@@ -13,6 +13,8 @@ str_clean_from_titles = function (s) {
   return (s)
 }
 
+str_rev = function (s) { paste(rev(unlist(stringr::str_split(s,""))), collapse = "") }
+
 str_namify = function (s) {
   s = s %>% stringr::str_trim() %>% stringr::str_to_title()
   s
@@ -133,11 +135,16 @@ scrape_formacao_from_lattes =  function (fn) {
     add_register(advisor, coadvisor, inst, year, "Pós-Doutorado")
   }
 
+  # Extract countries from the institution column
+  invs = sapply(insts, str_rev)
+  countries = sapply(stringr::str_extract(invs, ".+? ,") %>% stringr::str_sub(2,-3), str_rev)
+
   # Preparing data frame to return, removing blank ones
   D = data.frame(Nome = str_namify(person), Titulacao = str_namify(titles),
                  Orientacao = str_namify(advisors), Instituicao = stringr::str_trim(insts),
-                 Ano = years, stringsAsFactors = F) %>%
+                 Pais = str_namify(countries), Ano = years, stringsAsFactors = F) %>%
     dplyr::filter(!is.na(Titulacao))
 
   return (D)
 }
+
