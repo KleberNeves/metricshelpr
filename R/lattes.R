@@ -13,6 +13,11 @@ str_clean_from_titles = function (s) {
   return (s)
 }
 
+str_namify = function (s) {
+  s = s %>% stringr::str_trim() %>% stringr::str_to_title()
+  s
+}
+
 scrape_formacao_from_lattes =  function (fn) {
   page = xml2::read_html(fn)
 
@@ -25,7 +30,7 @@ scrape_formacao_from_lattes =  function (fn) {
       insts <<- c(insts, inst %>% stringr::str_sub(1,-2))
     }
     coadvisors <<- c(coadvisors, coadvisor %>% stringr::str_sub(15,-3))
-    years <<- c(years, as.character(as.numeric(year %>% stringr::str_sub(-4,-1))))
+    years <<- c(years, as.numeric(year %>% stringr::str_sub(-4,-1)))
     titles <<- c(titles, title)
   }
 
@@ -115,19 +120,23 @@ scrape_formacao_from_lattes =  function (fn) {
   divindex = stringr::str_which(divs %>% rvest::html_text(), "^Pós-Doutorado")
 
   if (length(divindex) > 0) {
-    divTitle = divs[divindex] %>% rvest::html_nodes(xpath = "text()[preceding-sibling::br]") %>% rvest::html_text()
+    divsPD = page %>% rvest::html_nodes("a[name='FormacaoAcademicaPosDoutorado'] ~ div > div > div")
+    divTitle = divsPD[2] %>% rvest::html_nodes(xpath = "text()[preceding-sibling::br]") %>% rvest::html_text()
     divTitle = str_clean_from_titles(divTitle)
     inst = divTitle[1]
     advisor = NA
     coadvisor = NA
-    year = NA
+
+    # browser()
+    year = divsPD[1] %>% rvest::html_text() %>%
+      stringr::str_squish() %>% stringr::str_remove_all(" ")
     add_register(advisor, coadvisor, inst, year, "Pós-Doutorado")
   }
 
   # Preparing data frame to return, removing blank ones
-  D = data.frame(Nome = stringr::str_trim(person), Titulacao = stringr::str_trim(titles),
-                 Orientacao = stringr::str_trim(advisors), Instituicao = stringr::str_trim(insts),
-                 Ano = stringr::str_trim(years), stringsAsFactors = F) %>%
+  D = data.frame(Nome = str_namify(person), Titulacao = str_namify(titles),
+                 Orientacao = str_namify(advisors), Instituicao = stringr::str_trim(insts),
+                 Ano = years, stringsAsFactors = F) %>%
     dplyr::filter(!is.na(Titulacao))
 
   return (D)

@@ -7,10 +7,12 @@ test_that("Scraping from Lattes gets the correct information", {
   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Instituicao"],
                    "Universidade Federal do Rio de Janeiro, UFRJ, Brasil.")
   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Ano"],
-                   "1997")
+                   1997)
 
   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Pós-Doutorado", "Instituicao"],
                    "Northwestern University, NORTHWESTERN, Estados Unidos.")
+  expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Pós-Doutorado", "Ano"],
+               2008)
 
 })
 
