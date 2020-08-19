@@ -38,14 +38,15 @@ scrape_formacao_from_lattes =  function (fn) {
   person = (page %>% rvest::html_nodes("h2.nome") %>% rvest::html_text())[1]
   print(paste0(basename(fn), ": ", person))
 
-  # if (basename(fn) == "7284551536353300") { browser() }
+  # if (basename(fn) == "0079842946439755") { browser() }
 
   divs = page %>% rvest::html_nodes(".layout-cell-pad-5")
 
   ### Doutorado
-  divindex = stringr::str_which(divs %>% rvest::html_text(), "^Doutorado")[1]
+  divindex = stringr::str_which(divs %>% rvest::html_text(), "^Doutorado")
 
   if (length(divindex) > 0) {
+    divindex = divindex[1]
     divTitle = divs[divindex] %>% rvest::html_nodes(xpath = "text()[preceding-sibling::br]") %>% rvest::html_text()
     divTitle = str_clean_from_titles(divTitle)
 
@@ -93,6 +94,7 @@ scrape_formacao_from_lattes =  function (fn) {
   divindex = stringr::str_which(divs %>% rvest::html_text(), "^Mestrado")
 
   if (length(divindex) > 0) {
+    divindex = divindex[1]
     divTitle = divs[divindex] %>% rvest::html_nodes(xpath = "text()[preceding-sibling::br]") %>% rvest::html_text()
     divTitle = str_clean_from_titles(divTitle)
 
@@ -109,6 +111,20 @@ scrape_formacao_from_lattes =  function (fn) {
     add_register(advisor, coadvisor, inst, year, "Mestrado")
   }
 
+  # Pós-Doutorado
+  divindex = stringr::str_which(divs %>% rvest::html_text(), "^Pós-Doutorado")
+
+  if (length(divindex) > 0) {
+    divTitle = divs[divindex] %>% rvest::html_nodes(xpath = "text()[preceding-sibling::br]") %>% rvest::html_text()
+    divTitle = str_clean_from_titles(divTitle)
+    inst = divTitle[1]
+    advisor = NA
+    coadvisor = NA
+    year = NA
+    add_register(advisor, coadvisor, inst, year, "Pós-Doutorado")
+  }
+
+  # Preparing data frame to return, removing blank ones
   D = data.frame(Nome = stringr::str_trim(person), Titulacao = stringr::str_trim(titles),
                  Orientacao = stringr::str_trim(advisors), Instituicao = stringr::str_trim(insts),
                  Ano = stringr::str_trim(years), stringsAsFactors = F) %>%
