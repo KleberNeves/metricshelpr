@@ -16,4 +16,8 @@ Imports:
     bibliometrix,
     plyr,
     dplyr,
-    ggplot2
+    ggplot2,
+    stringr,
+    rvest
+Suggests: 
+    testthat (>= 2.1.0)
