@@ -20,12 +20,12 @@ test_that("Scraping from Lattes gets the correct information", {
 
 })
 
-test_that("Scraping from Lattes can export table", {
-  cv_folder = "/home/kleber/Dropbox/Scientific Research/Scientometrics/ScriptLattes/scriptLattesV8.11q/cache"
-  fns = paste0(cv_folder, "/", list.files(cv_folder))
-  df = plyr::ldply(fns, scrape_formacao_from_lattes)
-
-  write.table(df, "~/teste orientacao.csv", sep = ";", row.names = F)
-
-  expect_equal(0,0)
-})
+# test_that("Scraping from Lattes can export table", {
+#   cv_folder = "/home/kleber/Dropbox/Scientific Research/Scientometrics/ScriptLattes/scriptLattesV8.11q/cache"
+#   fns = paste0(cv_folder, "/", list.files(cv_folder))
+#   df = plyr::ldply(fns, scrape_formacao_from_lattes)
+#
+#   write.table(df, "~/teste orientacao.csv", sep = ";", row.names = F)
+#
+#   expect_equal(0,0)
+# })

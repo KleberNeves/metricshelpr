@@ -2,3 +2,5 @@
 
 export(get.biblio.data)
 export(get.bibliometrix.M)
+export(scrape_formacao_from_lattes)
+importFrom(magrittr,"%>%")

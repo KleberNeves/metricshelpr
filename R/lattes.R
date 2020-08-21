@@ -1,6 +1,15 @@
+#' Cleans the advisor field from Lattes
+#'
+#' Removes common words added to the advisor field on CV Lattes (e.g. "Dr" or "Professor"). Meant for internal use.
+#'
+#' @param s The string extracted from the advisor field.
+#' @return The string with the titles/words removed.
+#' @importFrom magrittr %>%
 str_clean_from_titles = function (s) {
   s = s %>%
     stringr::str_remove_all("Dra[.]") %>%
+    stringr::str_remove_all("Dra ") %>%
+    stringr::str_remove_all("Dr ") %>%
     stringr::str_remove_all("Dr[.]") %>%
     stringr::str_remove_all("Prof[.]") %>%
     stringr::str_remove_all("Profa[.]") %>%
@@ -13,13 +22,30 @@ str_clean_from_titles = function (s) {
   return (s)
 }
 
+#' Reverses a string
+#'
+#' @param s The character object to be reversed.
+#' @return The string, backwards.
 str_rev = function (s) { paste(rev(unlist(stringr::str_split(s,""))), collapse = "") }
 
+#' Trims and makes Title Case
+#'
+#' @param s The character string to make look like a name.
+#' @return The string, in Title Case and trimmed.
+#' @importFrom magrittr %>%
 str_namify = function (s) {
   s = s %>% stringr::str_trim() %>% stringr::str_to_title()
   s
 }
 
+#' Scrapes data from the Formação section of a Lattes CV
+#'
+#' Reads the XML from a Lattes CV (as downloaded by ScriptLattes) and extracts the data in the Formacao section - advisor, institution, year and so on.
+#'
+#' @param fn The path to the XML CV file.
+#' @return A data frame with the information extracted.
+#' #' @importFrom magrittr %>%
+#' @export
 scrape_formacao_from_lattes =  function (fn) {
   page = xml2::read_html(fn)
 
@@ -140,7 +166,7 @@ scrape_formacao_from_lattes =  function (fn) {
   countries = sapply(stringr::str_extract(invs, ".+? ,") %>% stringr::str_sub(2,-3), str_rev)
 
   # Preparing data frame to return, removing blank ones
-  D = data.frame(Nome = str_namify(person), Titulacao = str_namify(titles),
+  D = data.frame(IDLattes = basename(fn), Nome = str_namify(person), Titulacao = str_namify(titles),
                  Orientacao = str_namify(advisors), Instituicao = stringr::str_trim(insts),
                  Pais = str_namify(countries), Ano = years, stringsAsFactors = F) %>%
     dplyr::filter(!is.na(Titulacao))
@@ -148,3 +174,30 @@ scrape_formacao_from_lattes =  function (fn) {
   return (D)
 }
 
+#' Reads the CSV snapshot from Lattes
+#'
+#' The resulting data frame is used by other functions (e.g. find_lattes_ID).
+#' It uses data.table::fread to read the large file. The current snapshots can be obtained at http://vision.ime.usp.br/~jmena/base-2020-marco/
+#'
+#' @param fn The path to the CSV snapshot.
+#' @return A data table with the IDs and full names.
+read_lattes_snapshot = function (fn) {
+  D = data.table::fread(fn, fill = T, quote = F, header = T, showProgress = T, select = c(1,2))
+  D$SearchName = stringr::str_to_lower(D$Nome)
+  D
+}
+
+#' Finds the matching Lattes ID for a given name
+#'
+#' Searches for a given name on the loaded Lattes CSV snapshot. To use this function, you must first call read_lattes_snapshot.
+#' Matches are found by calculating Levenshtein distances against the names in the snapshot.
+#'
+#' @param query_name The name to be searched.
+#' @param D The snapshot data table, loaded with read_lattes_snapshot().
+#' @return A data table with the matching ID.
+find_lattes_ID = function (query_name, D) {
+  print("Running search ...")
+  dists = utils::adist(D$SearchName, stringr::str_to_lower(query_name))
+  shortests = apply(dists, 2, function (x) { which(x == min(x)) })
+  return (D[shortests, .(`ID-Lattes`, Nome)])
+}

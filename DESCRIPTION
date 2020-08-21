@@ -18,6 +18,10 @@ Imports:
     dplyr,
     ggplot2,
     stringr,
-    rvest
+    rvest,
+    data.table,
+    magrittr,
+    igraph,
+    xml2
 Suggests: 
     testthat (>= 2.1.0)

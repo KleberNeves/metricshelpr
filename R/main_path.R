@@ -1,9 +1,10 @@
 # Pajek file reader: obtains the main path saved from Pajek
 read_main_path = function (fname, net) {
   # Adapted from function *read_net*, from Jonathan H. Morgan (2019) - http://mrvar.fdv.uni-lj.si/pajek/R/RMorgan.htm
-  require("igraph")
   read_net <- function(net_file) {
     net <- readLines(net_file)
+
+    trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 
     #Determining the length of the resulting nodes file
     vertices <- net[[1]]
@@ -32,7 +33,7 @@ read_main_path = function (fname, net) {
       nodes[[i]] <- nodes[[i]][1:5]
     }
 
-    nodes <-  as.data.frame(matrix(unlist(nodes), nrow = length(nodes), byrow = TRUE), stringsAsFactors = FALSE)
+    nodes <- as.data.frame(matrix(unlist(nodes), nrow = length(nodes), byrow = TRUE), stringsAsFactors = FALSE)
     colnames(nodes) <- c('ID', 'Label', 'x-coord', 'y-coord', 'z-coord')
 
     shapes <-  as.data.frame(matrix(unlist(shapes), nrow = length(shapes), byrow = TRUE),  stringsAsFactors = FALSE)
@@ -84,9 +85,9 @@ read_main_path = function (fname, net) {
   ties$Target = vertices$Node[as.numeric(ties$`Person j`)]
   main_ties = c(rbind(ties$Source,ties$Target))
 
-  main_path_nodes = V(net)[vertices$Node]
-  main_path_edges = get.edge.ids(net, vp = main_ties, directed = T)
+  main_path_nodes = igraph::V(net)[vertices$Node]
+  main_path_edges = igraph::get.edge.ids(net, vp = main_ties, directed = T)
 
-  main_path = subgraph.edges(net, main_path_edges, delete.vertices = T)
+  main_path = igraph::subgraph.edges(net, main_path_edges, delete.vertices = T)
   main_path
 }
