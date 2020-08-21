@@ -201,3 +201,42 @@ find_lattes_ID = function (query_name, D) {
   shortests = apply(dists, 2, function (x) { which(x == min(x)) })
   return (D[shortests, .(`ID-Lattes`, Nome)])
 }
+
+#' @importFrom glue glue
+run_scriptLattes = function (SL_path, ID_list_path, save_xml = "~") {
+  # Check if cache has files, if so, warns and stops
+  cache_path = paste0(dirname(SL_path),"/cache")
+  cache_files = list.files(cache_path)
+  if (length(cache_files) > 0) {
+    stop("ScriptLattes cache is not empty.")
+    return (1)
+  }
+
+  tmp = tempdir()
+
+  # Save the list of lattes IDs
+  lattesList = file(paste0(tmp,"/lattes.list"))
+  writeLines(ID_list_path, lattesList)
+  close(lattesList)
+
+  # Copy the default config file to the same folder
+  file.copy("./lattes.config", paste0(tmp,"/lattes.list"))
+
+  # Runs scriptLattes
+  slrun = system(command = glue(
+    'python "{SL_path}" ./lattes-config.txt'
+  ), wait = T)
+
+  # Returns if script doesn't run
+  if (slrun != 0) {
+    stop("Failed to run scriptLattes.")
+    return (slrun)
+  }
+
+  # If it ran successfully, just copy the cache folder contents to the output folder
+
+  # Compare contents of folder (list.files) with lattes ID list, build log table indicating which ones were downloaded
+
+  print("Success! See downloaded XML CVs at () and a log of which ones failed at ()")
+  return (0)
+}
