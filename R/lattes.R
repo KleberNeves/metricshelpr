@@ -22,6 +22,21 @@ str_clean_from_titles = function (s) {
   return (s)
 }
 
+#' Flattens the name, removing diacritics
+#'
+#' @param s The string to be flattened.
+#' @return The string with the non-marked versions of the vowels.
+#' @importFrom magrittr %>%
+str_flatten_name = function (s) {
+  s = s %>% stringr::str_to_lower(s) %>%
+    stringr::str_replace_all("[áãâà]","a") %>%
+    stringr::str_replace_all("[éê]","e") %>%
+    stringr::str_replace_all("[íî]","i") %>%
+    stringr::str_replace_all("[óôõ]","o") %>%
+    stringr::str_replace_all("[úû]","u")
+  s
+}
+
 #' Reverses a string
 #'
 #' @param s The character object to be reversed.
@@ -181,6 +196,7 @@ scrape_formacao_from_lattes =  function (fn) {
 #'
 #' @param fn The path to the CSV snapshot.
 #' @return A data table with the IDs and full names.
+#' @export
 read_lattes_snapshot = function (fn) {
   D = data.table::fread(fn, fill = T, quote = F, header = T, showProgress = T, select = c(1,2))
   D$SearchName = stringr::str_to_lower(D$Nome)
@@ -195,6 +211,7 @@ read_lattes_snapshot = function (fn) {
 #' @param query_name The name to be searched.
 #' @param D The snapshot data table, loaded with read_lattes_snapshot().
 #' @return A data table with the matching ID.
+#' @export
 find_lattes_ID = function (query_name, D) {
   print("Running search ...")
   dists = utils::adist(D$SearchName, stringr::str_to_lower(query_name))
@@ -203,7 +220,9 @@ find_lattes_ID = function (query_name, D) {
 }
 
 #' @importFrom glue glue
-run_scriptLattes = function (SL_path, ID_list_path, save_xml = "~") {
+#' @export
+run_scriptLattes = function (SL_path, ID_list, save_xml = "~") {
+  # browser()
   # Check if cache has files, if so, warns and stops
   cache_path = paste0(dirname(SL_path),"/cache")
   cache_files = list.files(cache_path)
@@ -216,16 +235,17 @@ run_scriptLattes = function (SL_path, ID_list_path, save_xml = "~") {
 
   # Save the list of lattes IDs
   lattesList = file(paste0(tmp,"/lattes.list"))
-  writeLines(ID_list_path, lattesList)
+  writeLines(as.character(ID_list), con = lattesList)
   close(lattesList)
 
   # Copy the default config file to the same folder
-  file.copy("./lattes.config", paste0(tmp,"/lattes.list"))
+  config_path = paste0(tmp,"/lattes.config")
+  file.copy("./lattes.config", config_path, overwrite = T)
 
   # Runs scriptLattes
-  slrun = system(command = glue(
-    'python "{SL_path}" ./lattes-config.txt'
-  ), wait = T)
+  cdline = glue('cd "{dirname(SL_path)}"')
+  cmdline = glue('python "{basename(SL_path)}" "{config_path}"')
+  slrun = system(command = paste(cdline, cmdline, sep = ";"), wait = T)
 
   # Returns if script doesn't run
   if (slrun != 0) {
@@ -234,8 +254,17 @@ run_scriptLattes = function (SL_path, ID_list_path, save_xml = "~") {
   }
 
   # If it ran successfully, just copy the cache folder contents to the output folder
+  cache_files = paste0(cache_path, "/", list.files(cache_path))
+  file.copy(from = cache_files, to = save_xml)
 
   # Compare contents of folder (list.files) with lattes ID list, build log table indicating which ones were downloaded
+  xml_list = list.files(save_xml)
+  failed = ID_list[!(ID_list %in% basename(xml_list))]
+
+  # Write the txt file with the ones that were not downloaded
+  failedList = file(paste0(tmp,"/failed.list"))
+  writeLines(as.character(failed), con = failedList)
+  close(failedList)
 
   print("Success! See downloaded XML CVs at () and a log of which ones failed at ()")
   return (0)

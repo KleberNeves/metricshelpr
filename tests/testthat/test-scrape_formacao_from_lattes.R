@@ -1,24 +1,24 @@
-test_that("Scraping from Lattes gets the correct information", {
-  D = scrape_formacao_from_lattes("9646923479627457")
-
-
-  expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Orientacao"],
-                   "Sérgio Teixeira Ferreira")
-  expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Instituicao"],
-                   "Universidade Federal do Rio de Janeiro, UFRJ, Brasil.")
-  expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Pais"],
-               "Brasil")
-  expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Ano"],
-                   1997)
-
-  expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Pós-Doutorado", "Instituicao"],
-                   "Northwestern University, NORTHWESTERN, Estados Unidos.")
-  expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Pós-Doutorado", "Pais"],
-               "Estados Unidos")
-  expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Pós-Doutorado", "Ano"],
-               2008)
-
-})
+# test_that("Scraping from Lattes gets the correct information", {
+#   D = scrape_formacao_from_lattes("9646923479627457")
+#
+#
+#   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Orientacao"],
+#                    "Sérgio Teixeira Ferreira")
+#   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Instituicao"],
+#                    "Universidade Federal do Rio de Janeiro, UFRJ, Brasil.")
+#   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Pais"],
+#                "Brasil")
+#   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Mestrado", "Ano"],
+#                    1997)
+#
+#   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Pós-Doutorado", "Instituicao"],
+#                    "Northwestern University, NORTHWESTERN, Estados Unidos.")
+#   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Pós-Doutorado", "Pais"],
+#                "Estados Unidos")
+#   expect_equal(D[D$Nome == "Fernanda Guarino De Felice" & D$Titulacao == "Pós-Doutorado", "Ano"],
+#                2008)
+#
+# })
 
 # test_that("Scraping from Lattes can export table", {
 #   cv_folder = "/home/kleber/Dropbox/Scientific Research/Scientometrics/ScriptLattes/scriptLattesV8.11q/cache"
