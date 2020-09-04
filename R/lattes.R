@@ -211,6 +211,7 @@ read_lattes_snapshot = function (fn) {
 #'
 #' Searches for a given name on the loaded Lattes CSV snapshot. To use this function, you must first call read_lattes_snapshot.
 #' Matches are found by calculating Levenshtein distances against the names in the snapshot.
+#' It does not accept the snapshot as an argument: it assumes it exists in the global environment.
 #'
 #' @param query_name The name to be searched.
 #' @param D The snapshot data table, loaded with read_lattes_snapshot().
@@ -218,7 +219,9 @@ read_lattes_snapshot = function (fn) {
 #' @export
 find_lattes_ID = function (query_name, D) {
   print("Running search ...")
-  dists = utils::adist(D$SearchName, stringr::str_to_lower(query_name))
+  initials = stringr::str_sub(query_name, 1, 2)
+  LD = D[[initials]]
+  dists = utils::adist(LD$SearchName, str_flatten_name(query_name))
   shortests = apply(dists, 2, function (x) { which(x == min(x)) })
   return (D[shortests, .(`ID-Lattes`, Nome)])
 }
