@@ -193,14 +193,18 @@ scrape_formacao_from_lattes =  function (fn) {
 #'
 #' The resulting data frame is used by other functions (e.g. find_lattes_ID).
 #' It uses data.table::fread to read the large file. The current snapshots can be obtained at http://vision.ime.usp.br/~jmena/base-2020-marco/
+#' It returns a list of data tables, obtained by splitting the dataset by the first two letters of
+#' the names. This is intended to make finding IDs faster, as an improvised dictionary structure.
 #'
 #' @param fn The path to the CSV snapshot.
-#' @return A data table with the IDs and full names.
+#' @return A list of data table with the IDs and full names.
 #' @export
 read_lattes_snapshot = function (fn) {
   D = data.table::fread(fn, fill = T, quote = F, header = T, showProgress = T, select = c(1,2))
-  D$SearchName = stringr::str_to_lower(D$Nome)
-  D
+  D$SearchName = str_flatten_name(D$Nome)
+  D$Initials = stringr::str_sub(D$SearchName, 1, 2)
+  DS = split(D %>% select(`ID-Lattes`, SearchName, Initials), D$Initials)
+  DS
 }
 
 #' Finds the matching Lattes ID for a given name
