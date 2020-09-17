@@ -10,9 +10,11 @@ read_lattes_snapshot(fn)
 \item{fn}{The path to the CSV snapshot.}
 }
 \value{
-A data table with the IDs and full names.
+A list of data table with the IDs and full names.
 }
 \description{
 The resulting data frame is used by other functions (e.g. find_lattes_ID).
 It uses data.table::fread to read the large file. The current snapshots can be obtained at http://vision.ime.usp.br/~jmena/base-2020-marco/
+It returns a list of data tables, obtained by splitting the dataset by the first two letters of
+the names. This is intended to make finding IDs faster, as an improvised dictionary structure.
 }

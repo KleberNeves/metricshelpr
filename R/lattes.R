@@ -28,12 +28,14 @@ str_clean_from_titles = function (s) {
 #' @return The string with the non-marked versions of the vowels.
 #' @importFrom magrittr %>%
 str_flatten_name = function (s) {
-  s = s %>% stringr::str_to_lower(s) %>%
-    stringr::str_replace_all("[áãâà]","a") %>%
-    stringr::str_replace_all("[éê]","e") %>%
-    stringr::str_replace_all("[íî]","i") %>%
-    stringr::str_replace_all("[óôõ]","o") %>%
-    stringr::str_replace_all("[úû]","u")
+  s = s %>% stringr::str_to_lower() %>%
+    stringr::str_replace_all("[áãâàä]","a") %>%
+    stringr::str_replace_all("[éêë]","e") %>%
+    stringr::str_replace_all("[íîï]","i") %>%
+    stringr::str_replace_all("[óôõòö]","o") %>%
+    stringr::str_replace_all("[úûü]","u") %>%
+    stringr::str_replace_all("[ç]","c") %>%
+    stringr::str_replace_all("[-`'´]","")
   s
 }
 
@@ -203,7 +205,7 @@ read_lattes_snapshot = function (fn) {
   D = data.table::fread(fn, fill = T, quote = F, header = T, showProgress = T, select = c(1,2))
   D$SearchName = str_flatten_name(D$Nome)
   D$Initials = stringr::str_sub(D$SearchName, 1, 2)
-  DS = split(D %>% select(`ID-Lattes`, SearchName, Initials), D$Initials)
+  DS = split(D %>% dplyr::select(`ID-Lattes`, SearchName, Initials), D$Initials)
   DS
 }
 
@@ -219,11 +221,12 @@ read_lattes_snapshot = function (fn) {
 #' @export
 find_lattes_ID = function (query_name, D) {
   print("Running search ...")
-  initials = stringr::str_sub(query_name, 1, 2)
+  initials = stringr::str_sub(query_name, 1, 2) %>% stringr::str_to_lower()
   LD = D[[initials]]
   dists = utils::adist(LD$SearchName, str_flatten_name(query_name))
   shortests = apply(dists, 2, function (x) { which(x == min(x)) })
-  return (D[shortests, .(`ID-Lattes`, Nome)])
+  found_rows = LD[shortests, .(`ID-Lattes`, SearchName)]
+  return (found_rows)
 }
 
 #' @importFrom glue glue

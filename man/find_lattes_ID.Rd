@@ -17,4 +17,5 @@ A data table with the matching ID.
 \description{
 Searches for a given name on the loaded Lattes CSV snapshot. To use this function, you must first call read_lattes_snapshot.
 Matches are found by calculating Levenshtein distances against the names in the snapshot.
+It does not accept the snapshot as an argument: it assumes it exists in the global environment.
 }
