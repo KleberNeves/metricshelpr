@@ -272,10 +272,10 @@ run_scriptLattes = function (SL_path, ID_list, save_xml = "~") {
   failed = ID_list[!(ID_list %in% basename(xml_list))]
 
   # Write the txt file with the ones that were not downloaded
-  failedList = file(paste0(tmp,"/failed.list"))
+  failedList = file(paste0(save_xml,"/failed.list"))
   writeLines(as.character(failed), con = failedList)
   close(failedList)
 
-  print("Success! See downloaded XML CVs at () and a log of which ones failed at ()")
+  print("Success! See downloaded XML CVs and a log of which ones failed.")
   return (0)
 }
