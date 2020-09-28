@@ -1,6 +1,17 @@
-# Pajek file reader: obtains the main path saved from Pajek
+#' Pajek file reader: obtains the main path saved from Pajek
+#'
+#' The main path file will be exported from Pajek. This function
+#' reads it back into R as an igraph network built by subsetting
+#' the full network.
+#'
+#' Code is adapted from function *read_net*, from Jonathan H. Morgan (2019)
+#' http://mrvar.fdv.uni-lj.si/pajek/R/RMorgan.htm
+#'
+#' @param fname The path to the Pajek exported file with the main path network.
+#' @param net The igraph full network.
+#' @return An igraph network with only the main path nodes.
+#' @export
 read_main_path = function (fname, net) {
-  # Adapted from function *read_net*, from Jonathan H. Morgan (2019) - http://mrvar.fdv.uni-lj.si/pajek/R/RMorgan.htm
   read_net <- function(net_file) {
     net <- readLines(net_file)
 
