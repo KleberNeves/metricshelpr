@@ -102,3 +102,59 @@ read_main_path = function (fname, net) {
   main_path = igraph::subgraph.edges(net, main_path_edges, delete.vertices = T)
   main_path
 }
+
+#' Build, prepare and save citation network
+#'
+#' Helper function: it will call other functions to (1) build the citation net,
+#' (2) simplify it into an acyclic graph and (3) save it in Pajek format (side effect).
+#'
+#' @param M A bibliometrix M data frame.
+#' @return An igraph citation network.
+#' @export
+load_citation_net = function (M) {
+  cit.net = make.citnet(M)
+  pajek.net = make.net.for.pajek(cit.net)
+  pajek.net
+}
+
+#' Read, convert and save main path
+#'
+#' Helper function: it will call other functions to (1) read the
+#' Pajek exported main path network file (2) save it as a GML
+#' network file and (3) save the list of papers in the main path,
+#' as well as the full Web of Science record for the papers in
+#' the main path.
+#'
+#' @param pajekfile The path to the Pajek exported main path file (.net).
+#' @param M A bibliometrix M data frame.
+#' @param NET The full igraph network.
+#' @param output_path Path to a directory to save the main path files.
+#' @return An bibliometrix data frame with only the main path nodes.
+#' @importFrom magrittr %>%
+#' @export
+load_main_path = function(pajekfile, M, NET, output_path = ".") {
+  main_path = read_main_path(pajekfile, NET)
+  igraph::V(main_path)$Year = as.numeric(
+    stringr::str_extract(igraph::V(main_path)$name, "[0-9]+")
+  )
+
+  igraph::write_graph(main_path,
+                      paste0(output_path, "/Citation Main Path.gml"),
+                      format = "GML")
+
+  mpPapers = igraph::V(main_path)$name
+  mpPapers = c(unlist(map(mpPapers, str_split, "---")))
+  mpPapers = mpPapers[!duplicated(mpPapers)]
+
+  mpM = M[rownames(M) %in% mpPapers,]
+
+  write.table(mpM %>% select(SR_FULL, TI, PY, SO, DI, TC),
+              paste0(output_path, "/Main Path Papers List.csv"),
+              sep = "\t", row.names = F)
+
+  write.table(mpM,
+              paste0(output_path,"/Main Path Papers List Full Records.csv"),
+              sep = "\t", row.names = F)
+
+  mpM
+}

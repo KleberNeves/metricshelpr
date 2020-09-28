@@ -8,7 +8,6 @@
 #' @param M The bibliometrix data frame.
 #' @param min.citations The minimum number of received citations for the paper to be included.
 #' @return A list with the citation information and metadata.
-#' @importFrom magrittr %>%
 make.hist.citation.net = function (M, min.citations = 1) {
   min.citations = max(c(1, min.citations))
   M$TC = as.numeric(M$TC)
