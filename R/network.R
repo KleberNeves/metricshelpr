@@ -8,7 +8,7 @@
 #' @param M The bibliometrix data frame.
 #' @param min.citations The minimum number of received citations for the paper to be included.
 #' @return A list with the citation information and metadata.
-make.hist.citation.net = function (M, min.citations = 1) {
+make_hist_citation_net = function (M, min.citations = 1) {
   min.citations = max(c(1, min.citations))
   M$TC = as.numeric(M$TC)
   M = M[!is.na(M$TC), ]
@@ -79,9 +79,9 @@ make.hist.citation.net = function (M, min.citations = 1) {
 #' @param min.citations The minimum number of received citations for the paper to be included.
 #' @return A igraph network made of citations between papers.
 #' @export
-make.citnet = function(M) {
+make_citnet = function(M) {
   cat("Building edges ...\n")
-  histResults = make.hist.citation.net(M, min.citations = 1)
+  histResults = make_hist_citation_net(M, min.citations = 1)
   cat("Making graph ...\n")
   ADJ = as.matrix(histResults$NetMatrix)
   NET = igraph::graph_from_adjacency_matrix(ADJ, mode = "directed", diag = F)
@@ -103,7 +103,7 @@ make.citnet = function(M) {
 #' @param NET An igraph network.
 #' @return The simplified network.
 #' @export
-make.net.for.pajek = function (NET) {
+make_net_for_pajek = function (NET) {
   cat("Simplifying network ...\n")
   NET = igraph::simplify(NET, remove.multiple = T, remove.loops = T)
   # browser()

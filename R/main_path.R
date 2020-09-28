@@ -112,8 +112,8 @@ read_main_path = function (fname, net) {
 #' @return An igraph citation network.
 #' @export
 load_citation_net = function (M) {
-  cit.net = make.citnet(M)
-  pajek.net = make.net.for.pajek(cit.net)
+  cit.net = make_citnet(M)
+  pajek.net = make_net_for_pajek(cit.net)
   pajek.net
 }
 
