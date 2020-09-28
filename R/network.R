@@ -1,4 +1,15 @@
-make.hist.citation.net = function (M, min.citations = 1, sep = ";") {
+#' Matches citations to build citation net
+#'
+#' Matches the names in the cited references field to the
+#' short titles to identify papers in the dataset that cited
+#' each other. It's a version of the original bibliometrix
+#' version with a few steps omitted for performance.
+#'
+#' @param M The bibliometrix data frame.
+#' @param min.citations The minimum number of received citations for the paper to be included.
+#' @return A list with the citation information and metadata.
+#' @importFrom magrittr %>%
+make.hist.citation.net = function (M, min.citations = 1) {
   min.citations = max(c(1, min.citations))
   M$TC = as.numeric(M$TC)
   M = M[!is.na(M$TC), ]
@@ -60,9 +71,18 @@ make.hist.citation.net = function (M, min.citations = 1, sep = ";") {
   return(results)
 }
 
+#' Builds a historical citation igraph net
+#'
+#' Uses a M bibliometrix data frame to build the citation network
+#' for the papers in the dataset, in the igraph format.
+#'
+#' @param M The bibliometrix data frame.
+#' @param min.citations The minimum number of received citations for the paper to be included.
+#' @return A igraph network made of citations between papers.
+#' @export
 make.citnet = function(M) {
   cat("Building edges ...\n")
-  histResults = make.hist.citation.net(M, min.citations = 1, sep = ";")
+  histResults = make.hist.citation.net(M, min.citations = 1)
   cat("Making graph ...\n")
   ADJ = as.matrix(histResults$NetMatrix)
   NET = igraph::graph_from_adjacency_matrix(ADJ, mode = "directed", diag = F)
@@ -71,6 +91,19 @@ make.citnet = function(M) {
   NET
 }
 
+#' Removes loops from a network so that Pajek can read it
+#'
+#' Removes loops of order up to 4 to simplify the network
+#' and make it a direct acyclic graph (DAG). This is necessary
+#' so that Pajek can run the main path analysis algorithm.
+#'
+#' Called for the side effects: it will save GML and Pajek
+#' files of the network (Historical Citation Net). It will
+#' warn you if the resulting network is still not a DAG.
+#'
+#' @param NET An igraph network.
+#' @return The simplified network.
+#' @export
 make.net.for.pajek = function (NET) {
   cat("Simplifying network ...\n")
   NET = igraph::simplify(NET, remove.multiple = T, remove.loops = T)
@@ -119,6 +152,14 @@ make.net.for.pajek = function (NET) {
   NET
 }
 
+#' Find cycles of a specified length in a graph
+#'
+#' Helper function for making networks acyclical. It
+#' finds loops of a given order in an igraph network.
+#'
+#' @param g The igraph network.
+#' @param size The length of the loops to find.
+#' @return A list of vectors, each vector providing the ids of the nodes in the loop.
 find_cycles = function(g, size) {
   Cycles = NULL
   if (size == 2) {
@@ -188,10 +229,27 @@ find_cycles = function(g, size) {
   Cycles
 }
 
+#' Combines attribute for merged paper nodes
+#'
+#' When simplifying networks by merging nodes/papers, this
+#' is the function used to combine the paper titles in one.
+#'
+#' @param x A vector with the titles of the papers.
+#' @return The combined titles.
 family_attr_comb = function(x) {
   paste(x, collapse = "---")
 }
 
+#' Merges papers which are in a citation loop
+#'
+#' Merges the papers passed to it into one node. This is used
+#' when removing loops to make the citation net acyclic. If A
+#' cites B and B cites A, this will become node AB, with their
+#' outgoing and ingoing edges pooled together.
+#'
+#' @param loops A list of loops, each a vector with node ids.
+#' @param g The citation igraph network.
+#' @return A data frame with the information extracted.
 make_loops_into_families = function (loops, g) {
   contraction = 1:igraph::vcount(g)
   contracted = numeric(0)

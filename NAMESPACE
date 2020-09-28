@@ -3,6 +3,8 @@
 export(find_lattes_ID)
 export(get.biblio.data)
 export(get.bibliometrix.M)
+export(make.citnet)
+export(make.net.for.pajek)
 export(read_lattes_snapshot)
 export(run_scriptLattes)
 export(scrape_formacao_from_lattes)
