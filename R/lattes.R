@@ -88,8 +88,6 @@ scrape_formacao_from_lattes =  function (fn) {
   person = (page %>% rvest::html_nodes("h2.nome") %>% rvest::html_text())[1]
   print(paste0(basename(fn), ": ", person))
 
-  # if (basename(fn) == "0079842946439755") { browser() }
-
   divs = page %>% rvest::html_nodes(".layout-cell-pad-5")
 
   ### Doutorado
@@ -102,10 +100,9 @@ scrape_formacao_from_lattes =  function (fn) {
 
     # Testa se teve sanduíche ou não
     divtext = divs[divindex] %>% rvest::html_text()
-    sandwich = stringr::str_detect(divtext, "sanduíche")
+    sandwich = stringr::str_detect(divtext, "período sanduíche")
 
     if (any(sandwich)) {
-
       i = stringr::str_which(divTitle, "^Título: ")
       year = divTitle[i] %>% stringr::str_extract("btenção: [0-9]{4}")
 
@@ -113,10 +110,12 @@ scrape_formacao_from_lattes =  function (fn) {
       inst = inst[!is.na(inst)]
       advisor = stringr::str_extract(divtext, "\\(Orientador: .+?\\)")
       advisor = advisor[!is.na(advisor)]
+      if (length(year) > 0) {
+        add_register(advisor, "", inst, year, "Período Sanduíche", T)
+      }
 
-      add_register(advisor, "", inst, year, "Período Sanduíche", T)
-
-      i = stringr::str_which(divTitle, "^Orientador: "); advisor = divTitle[i]
+      i = stringr::str_which(divTitle, "^Orientador: ")
+      if (length(i) > 0) { advisor = divTitle[i] } else { advisor = paste("Orientador:", divTitle[3]) }
       if (is.na(stringr::str_extract(advisor, ": .+"))) {
         advisor = stringr::str_trim(
           stringr::str_extract(paste(divTitle, collapse = " "), " Orientador: .+?[.]")
@@ -124,10 +123,13 @@ scrape_formacao_from_lattes =  function (fn) {
       }
       i = stringr::str_which(divTitle, "^Coorientador: "); coadvisor = divTitle[i]
       i = 1; inst = divTitle[i]
-      add_register(advisor, coadvisor, inst, year, "Doutorado")
+      if (length(year) > 0) {
+        add_register(advisor, coadvisor, inst, year, "Doutorado")
+      }
 
     } else {
-      i = stringr::str_which(divTitle, "^Orientador: "); advisor = divTitle[i]
+      i = stringr::str_which(divTitle, "^Orientador: ")
+      if (length(i) > 0) { advisor = divTitle[i] } else { advisor = paste("Orientador:", divTitle[3]) }
       if (is.na(stringr::str_extract(advisor, ": .+"))) {
         advisor = stringr::str_trim(
           stringr::str_extract(paste(divTitle, collapse = " "), " Orientador: .+?[.]")
@@ -136,7 +138,9 @@ scrape_formacao_from_lattes =  function (fn) {
       i = stringr::str_which(divTitle, "^Coorientador: "); coadvisor = divTitle[i]
       i = 1; inst = divTitle[i]
       i = stringr::str_which(divTitle, "^Título: "); year = divTitle[i] %>% stringr::str_extract("btenção: [0-9]{4}")
-      add_register(advisor, coadvisor, inst, year, "Doutorado")
+      if (length(year) > 0) {
+        add_register(advisor, coadvisor, inst, year, "Doutorado")
+      }
     }
   }
 
@@ -148,7 +152,8 @@ scrape_formacao_from_lattes =  function (fn) {
     divTitle = divs[divindex] %>% rvest::html_nodes(xpath = "text()[preceding-sibling::br]") %>% rvest::html_text()
     divTitle = str_clean_from_titles(divTitle)
 
-    i = stringr::str_which(divTitle, "^Orientador: "); advisor = divTitle[i]
+    i = stringr::str_which(divTitle, "^Orientador: ")
+    if (length(i) > 0) { advisor = divTitle[i] } else { advisor = paste("Orientador:", divTitle[3]) }
     if (is.na(stringr::str_extract(advisor, ": .+"))) {
       advisor = stringr::str_trim(
         stringr::str_extract(paste(divTitle, collapse = " "), " Orientador: .+?[.]")
@@ -158,7 +163,9 @@ scrape_formacao_from_lattes =  function (fn) {
     i = 1; inst = divTitle[i]
     i = stringr::str_which(divTitle, "^Título: ")
     year = divTitle[i] %>% stringr::str_extract("btenção: [0-9]{4}")
-    add_register(advisor, coadvisor, inst, year, "Mestrado")
+    if (length(year) > 0) {
+      add_register(advisor, coadvisor, inst, year, "Mestrado")
+    }
   }
 
   # Pós-Doutorado
@@ -166,16 +173,32 @@ scrape_formacao_from_lattes =  function (fn) {
 
   if (length(divindex) > 0) {
     divsPD = page %>% rvest::html_nodes("a[name='FormacaoAcademicaPosDoutorado'] ~ div > div > div")
-    divTitle = divsPD[2] %>% rvest::html_nodes(xpath = "text()[preceding-sibling::br]") %>% rvest::html_text()
-    divTitle = str_clean_from_titles(divTitle)
-    inst = divTitle[1]
-    advisor = NA
-    coadvisor = NA
+    if (length(divsPD) == 0) {
+      divsPD = page %>% rvest::html_nodes("a[name='FormacaoAcademicaPosDoutoradoLivreDocencia'] ~ div > div > div")
+    }
 
-    # browser()
-    year = divsPD[1] %>% rvest::html_text() %>%
-      stringr::str_squish() %>% stringr::str_remove_all(" ")
-    add_register(advisor, coadvisor, inst, year, "Pós-Doutorado")
+    for (i in seq(1, length(divsPD), 2)) {
+      divTitle = divsPD[i+1] %>% rvest::html_nodes(xpath = "text()[preceding-sibling::br]") %>% rvest::html_text()
+      divTitle = str_clean_from_titles(divTitle)
+      inst = divTitle[1]
+      advisor = NA
+      coadvisor = NA
+
+      title = ifelse(
+        divsPD[i+1] %>% rvest::html_text() %>% stringr::str_to_lower() %>%
+          stringr::str_detect("pós-doutorado"),
+        "Pós-Doutorado", "Livre-docência")
+
+      year = divsPD[i] %>% rvest::html_text() %>%
+        stringr::str_squish() %>% stringr::str_remove_all(" ")
+      add_register(advisor, coadvisor, inst, year, title)
+    }
+  }
+
+  if (length(years) == 0) {
+    D = data.frame(IDLattes = basename(fn), Nome = str_namify(person), Titulacao = NA,
+                   Orientacao = NA, Instituicao = NA, Pais = NA, Ano = NA, stringsAsFactors = F)
+    return (D)
   }
 
   # Extract countries from the institution column
