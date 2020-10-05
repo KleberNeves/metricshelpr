@@ -11,6 +11,7 @@
 #' @param period.names A vector of names for the periods
 #' @return A plot of the cogntive career.
 #' @importFrom magrittr %>%
+#' @export
 cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period.names = NULL) {
   # Filter the papers that will appear, if not showing all of them.
   if (nrow(M) > n) {

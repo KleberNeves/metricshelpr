@@ -1,0 +1,142 @@
+#' Load a M data frame
+#'
+#' Obtains the "M" data frame using bibliometrix to read all
+#' text files in the given folder.
+#'
+#' @param folder Full path to the folder containing the bibliometric data.
+#' @param dbsource Passed on to convert2df. Defaults to "isi" (Web of Science).
+#' @param format Passed on to convert2df. Defaults to "plaintext" (Web of Science).
+#' @return An "M" data frame, as loaded and converted through bibliometrix.
+#' @export
+get.bibliometrix.M = function(folder, dbsource = "isi", format = "plaintext") {
+  filenames = paste0(folder, "/", list.files(folder, ".txt$"))
+  M = bibliometrix::convert2df(filenames, dbsource = dbsource, format = format)
+  M
+}
+
+#' Obtains the "M" data frame for a generation
+#'
+#' Obtains the "M" data frame using bibliometrix to read all
+#' text files in the folder for the generations specified.
+#' Assumes generations are structured in subfolders named G0, G1, G2 and so on.
+#'
+#' @param generations Integer vector indicating the generation(s) to be loaded.
+#' @param data_folder Full path to the folder where the data is stored.
+#' @return An "M" data frame, as loaded and converted through bibliometrix.
+#' @export
+get.biblio.data = function (generations, data_folder) {
+  if (length(generations) > 1) {
+    filenames = character(0)
+    for (gen in generations) {
+      datapath = paste0(data_folder, "/G", gen)
+      filenames = c(filenames, paste0(datapath,"/",list.files(datapath, pattern = ".txt$")))
+    }
+  } else {
+    datapath = paste0(data_folder, "/G", generations)
+    filenames = paste0(datapath,"/",list.files(datapath, pattern = ".txt$"))
+  }
+  M = get.bibliometrix.M(filenames)
+  M = M[!duplicated(M$TI),]
+  M
+}
+
+#' Extracts author order and country
+#'
+#' From a M bibliometrix data frame, extracts the author order and affiliation country
+#' from the AU and C1 fields. Lots of ad hoc work arounds to handle abbreviated names and such.
+#' Author order comes in two columns, as counted from first to last (positive) and from last to first (negative, i.e. -1 is the last author).
+#'
+#' @param M A bibliometrix dataset.
+#' @return A data frame with the author order and country data.
+#' @export
+extract.author.country.order = function (M) {
+  author_country_data = ldply(1:nrow(M), function (i) {
+    title = M[i, "TI"]
+    affil = M[i, "C1"]
+    author_field = M[i, "AU"]
+
+    if (is.na(affil) | !stringr::str_detect(affil, "\\[")) {
+      return (
+        data.frame(Title = title,
+                   Author = NA,
+                   Position = NA,
+                   Country = NA,
+                   stringsAsFactors = F)
+      )
+    }
+
+    # Extract author list and positions to be merged later
+    author_list = unlist(str_split(author_field, ";"))
+    author_list = data.frame(Author = author_list, Position = 1:length(author_list))
+    author_list$NegPosition = author_list$Position - nrow(author_list) - 1
+
+    # Extracts author list from affiliation text
+    authors = unlist(str_extract_all(affil, "(\\[.+?\\])"))
+    authors = stringr::str_replace_all(authors, "[.];", ".")
+    nauthors_per_group = stringr::str_count(authors, ";") + 1
+    authors = stringr::str_remove_all(authors, "\\[")
+    authors = stringr::str_remove_all(authors, "\\]")
+    authors = stringr::str_remove_all(authors, ",")
+    authors = stringr::str_remove_all(authors, "[.]")
+    authors = unlist(stringr::str_split(authors, "; "))
+
+    # Extracts affiliations per group of authors
+    affil = stringr::str_replace_all(affil, "; \\[", " [")
+    affil = stringr::str_replace_all(affil, "(\\[.+?\\])", "]")
+    affil = unlist(stringr::str_split(affil, "\\] "))
+    affil = affil[2:length(affil)]
+    affil = affil[affil != ""]
+
+    # Extract countries from affiliations
+    countries = unlist(plyr::llply(affil, function (x) {
+      x = unlist(stringr::str_split(x, "; "))
+      x = stringr::str_trim(x)
+      x = stringr::str_remove_all(x, "[.]")
+      x = stringr::str_remove(x, ".+, ")
+      x[stringr::str_which(x, " USA$")] = "USA"
+      x = paste(x, collapse = "; ")
+    }))
+    countries = rep(countries, nauthors_per_group)
+
+    # Building results data frame
+    R = data.frame(Title = title,
+                   Author = authors,
+                   Country = countries,
+                   stringsAsFactors = F)
+
+    RR = merge(R, author_list, by = "Author")
+
+    # If merge fails, see if author list is using initials and remerge
+    if (nrow(RR) == 0) {
+      author_names = unlist(lapply(authors, function (x) {
+        x = unlist(stringr::str_split(x, " "))
+        first_name = x[1]
+        if (first_name %in% c("DE","DOS","DAS","DA")) {
+          first_name = paste(x[1:2], collapse = " ")
+          x = x[3:length(x)]
+        } else {
+          x = x[2:length(x)]
+        }
+
+        if (any(x %in% c("DE","DOS","DAS","DA"))) {
+          dosdas = which(x %in% c("DE","DOS","DAS","DA")) + 1
+          x = x[-dosdas]
+        }
+        x = str_extract(x, "[A-Z]")
+        # } else { x = c() }
+        fullname = paste(c(first_name, " ", x), collapse = "")
+        fullname
+      }))
+
+      R = data.frame(Title = title,
+                     Author = author_names,
+                     Country = countries,
+                     stringsAsFactors = F)
+      RR = merge(R, author_list, by = "Author")
+    }
+
+    RR
+  })
+
+  author_country_data
+}
