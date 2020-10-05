@@ -131,6 +131,7 @@ load_citation_net = function (M) {
 #' @param output_path Path to a directory to save the main path files.
 #' @return An bibliometrix data frame with only the main path nodes.
 #' @importFrom magrittr %>%
+#' @importFrom utils write.table
 #' @export
 load_main_path = function(pajekfile, M, NET, output_path = ".") {
   main_path = read_main_path(pajekfile, NET)
@@ -143,12 +144,12 @@ load_main_path = function(pajekfile, M, NET, output_path = ".") {
                       format = "GML")
 
   mpPapers = igraph::V(main_path)$name
-  mpPapers = c(unlist(map(mpPapers, str_split, "---")))
+  mpPapers = c(unlist(purrr::map(mpPapers, stringr::str_split, "---")))
   mpPapers = mpPapers[!duplicated(mpPapers)]
 
   mpM = M[rownames(M) %in% mpPapers,]
 
-  write.table(mpM %>% select(SR_FULL, TI, PY, SO, DI, TC),
+  write.table(mpM %>% dplyr::select(SR_FULL, TI, PY, SO, DI, TC),
               paste0(output_path, "/Main Path Papers List.csv"),
               sep = "\t", row.names = F)
 

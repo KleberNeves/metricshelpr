@@ -23,6 +23,8 @@ Imports:
     magrittr,
     igraph,
     xml2,
+    Matrix,
+    purrr,
     glue
 Suggests: 
     testthat (>= 2.1.0)

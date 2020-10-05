@@ -252,6 +252,14 @@ find_lattes_ID = function (query_name, D) {
   return (found_rows)
 }
 
+#' Runs scriptLattes
+#'
+#' Runs the scriptLattes tool for a given set of IDs. Requires an internet connection.
+#'
+#' @param SL_path Path to scriptlattes main python script.
+#' @param ID_list A character vector containing the Lattes IDs to be retrieved.
+#' @param save_xml The folder to output the files.
+#' @return If successful, 0. Otherwise, 1.
 #' @importFrom glue glue
 #' @export
 run_scriptLattes = function (SL_path, ID_list, save_xml = "~") {

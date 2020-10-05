@@ -24,7 +24,7 @@ make_hist_citation_net = function (M, min.citations = 1) {
   N = dim(M2)[1]
   N2 = dim(M)[1]
   rows = c(1:N2)
-  lCit = Matrix(0, N, N2)
+  lCit = Matrix::Matrix(0, N, N2)
 
   for (i in 1:N) {
     if (i %% 10 == 0 | i == N) cat("Articles analysed  ", i, "\n")
@@ -76,7 +76,6 @@ make_hist_citation_net = function (M, min.citations = 1) {
 #' for the papers in the dataset, in the igraph format.
 #'
 #' @param M The bibliometrix data frame.
-#' @param min.citations The minimum number of received citations for the paper to be included.
 #' @return A igraph network made of citations between papers.
 #' @export
 make_citnet = function(M) {

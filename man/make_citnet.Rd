@@ -8,8 +8,6 @@ make_citnet(M)
 }
 \arguments{
 \item{M}{The bibliometrix data frame.}
-
-\item{min.citations}{The minimum number of received citations for the paper to be included.}
 }
 \value{
 A igraph network made of citations between papers.
