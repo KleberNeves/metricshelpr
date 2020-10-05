@@ -1,6 +1,6 @@
 #' Plots the cognitive career of a researcher
 #'
-#' The cognitive career plot (REF) is a bibliographic coupling graph of the papers of a single author over the years. This function receives a bibliometrix dataset with the papers of single author and makes such plot.
+#' The cognitive career plot (see "A Bibliometric Reconstruction of Research Trails for Qualitative Investigations of Scientific Innovations") is a bibliographic coupling graph of the papers of a single author over the years. This function receives a bibliometrix dataset with the papers of single author and makes such plot.
 #'
 #' Periods can be identified (e.g. "before post-doc", "after tenure"). Years which divide periods can be given as a vector. Period names is another vector, with length equal that of the divisions plus one (i.e. if there's one division - length(periods) == 1 - then there's two periods - length(period.names) must be == 2).
 #'
@@ -123,4 +123,28 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
     axis.title.x = element_blank(), axis.line.x = element_blank(),
     axis.text.x = element_text(face = "bold")
   )
+}
+
+#' Plots a triangle plot
+#'
+#' The biomedical triangle plot (see "Identifying translational science within the triangle of biomedicine") is a ternary plot where each corner represents Animal research, Cellular/Molecular research and Human research. This is a way of visualizing translation.
+#'
+#' TODO: this function needs to be rewritten to receive the M dataset - with ACH columns - and
+#' itself should prepare the ternary data, you should just indicate the ACH column. This requires
+#' another function to be called beforehand, to convert MeSH into ACH.
+#'
+#' @param tri_data A dataset with the ternary data percentages.
+#' @return The triangle plot.
+#' @export
+triangle.plot = function (tri_data) {
+  p = ggtern::ggtern(data = tri_data,
+             aes(x = N_C, y = N_A, z = N_H, group = Author)) +
+    ggplot2::geom_point(data = tri_data %>% filter(Period == "Zika Papers"),
+               size = 1) +
+    ggplot2::geom_line() +
+    ggtern::geom_Risoprop(value = 0.5, linetype = "dashed", color = "blue") +
+    ggplot2::theme_bw() + ggtern::theme_nogrid_minor() +
+    ggplot2::labs(title = "Biomedicine Triangle Plot", x = "Cell./Mol.", y = "Animal", z = "Human") + theme(axis.title = element_text(size = 9))
+
+  p
 }

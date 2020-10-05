@@ -27,7 +27,7 @@ cognitiveCareerPlot(
 A plot of the cogntive career.
 }
 \description{
-The cognitive career plot (REF) is a bibliographic coupling graph of the papers of a single author over the years. This function receives a bibliometrix dataset with the papers of single author and makes such plot.
+The cognitive career plot (see "A Bibliometric Reconstruction of Research Trails for Qualitative Investigations of Scientific Innovations") is a bibliographic coupling graph of the papers of a single author over the years. This function receives a bibliometrix dataset with the papers of single author and makes such plot.
 }
 \details{
 Periods can be identified (e.g. "before post-doc", "after tenure"). Years which divide periods can be given as a vector. Period names is another vector, with length equal that of the divisions plus one (i.e. if there's one division - length(periods) == 1 - then there's two periods - length(period.names) must be == 2).
