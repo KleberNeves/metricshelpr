@@ -88,7 +88,7 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   if (!is.null(periods)) {
     g = g + ggplot2::geom_vline(xintercept = periods, linetype = "dashed", color = "black")
   }
-  # browser()
+
   g = g +
     ggraph::geom_edge_link(width = 1, check_overlap = T, edge_alpha = 0.8, color = "grey") +
     ggraph::geom_node_point(aes(color = as.factor(cluster)), size = V(bsk)$node.size, alpha = 0.8) +
@@ -129,19 +129,22 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
 #'
 #' The biomedical triangle plot (see "Identifying translational science within the triangle of biomedicine") is a ternary plot where each corner represents Animal research, Cellular/Molecular research and Human research. This is a way of visualizing translation.
 #'
-#' TODO: this function needs to be rewritten to receive the M dataset - with ACH columns - and
-#' itself should prepare the ternary data, you should just indicate the ACH column. This requires
-#' another function to be called beforehand, to convert MeSH into ACH.
+#' This function is generic. The *biomed_triangle_plot* is closer to the plot in the original paper.
 #'
-#' @param tri_data A dataset with the ternary data percentages.
+#' Before calling this function, you can generate the appropriately formatted data with *codify_triangle_categories* and *count_data_for_triangle*.
+#'
+#' @param tri_data A dataset with the values for each of the three categories.
+#' @param tri_cols The name of the columns in the dataset which represent the categories.
+#' @param tri_labels The name of the axes (if NULL, defaults to the same name as the columns).
+#' @param plot_translation_axis Whether to plot the line of translation, from AC to H.
 #' @return The triangle plot.
 #' @export
-triangle.plot = function (tri_data, tri_cols, tri_labs = NULL, plot_translation_axis = F) {
+triangle_plot = function (tri_data, tri_cols, tri_labs = NULL, plot_translation_axis = F) {
   if (is.null(tri_labs)) { tri_labs =  tri_cols }
   p = ggtern::ggtern(data = tri_data) +
-    ggplot2::aes_string(x = tri_cols[1], y = tri_cols[2], z = tri_cols[3]) +
+    ggplot2::aes_string(x = tri_cols[2], y = tri_cols[1], z = tri_cols[3]) +
     ggplot2::geom_point(size = 2) +
-    ggplot2::labs(x = tri_labs[1], y = tri_labs[2], z = tri_labs[3]) +
+    ggplot2::labs(x = tri_labs[2], y = tri_labs[1], z = tri_labs[3]) +
     ggtern::theme_nogrid_minor()
 
   if (plot_translation_axis) {
@@ -151,8 +154,32 @@ triangle.plot = function (tri_data, tri_cols, tri_labs = NULL, plot_translation_
   p
 }
 
+#' Plots a triangle plot
+#'
+#' Same as *triangle_plot*, except that it assumes the categories are ACH (Animal, Cellular/Molecular and Human) and automatically adds the translation axis.
+#'
+#' @param tri_data A dataset with the values for each of the three categories.
+#' @return The triangle plot.
+#' @export
+biomed_triangle_plot = function (tri_data) {
+  triangle_plot(tri_data, c("A","C","H"), c("Animal","Cellular","Human"), T)
+}
 
-# ref_table must have one letter per category
+#' Generates codes based on MeSH terms
+#'
+#' Compares a vector of terms (multiple terms separated by semicolons) with a reference table and returns the categories to which the elements belong. The reference table must have two columns, one named Term and another named Category. Categories must be represented by a single letter and each term must belong to a single category.
+#'
+#' This is intended as a support function for triangle plots, but can be used for any arbitrary classification based on MeSH terms (or other terms).
+#'
+#' Example:
+#' ref_table = data.frame(Term = c("Letter A", "Letter B"), Category = c("A", "B"))
+#' codify_triangle_categories(terms = c("Letter B", "Letter A", "Letter A;Letter B"), ref_table)
+#' Returns: "B"      "A"         "AB"
+#'
+#' @param terms A character vector with terms (multiple terms in the same element separated by semicolon).
+#' @param ref_table A reference table with terms and their categories.
+#' @return A vector with the categories of the terms in each element.
+#' @export
 codify_triangle_categories = function (terms, ref_table) {
     term_categories = purrr::map_chr(terms, function (x) {
       terms_df = data.frame(Term = unlist(stringr::str_split(x, ";")))
@@ -163,7 +190,16 @@ codify_triangle_categories = function (terms, ref_table) {
     term_categories
 }
 
-
+#' Counts data for ternary categories
+#'
+#' Counts the ocurrences of each category (represented by single letters) in a vector of categories (as returned by *codify_triangle_categories*).
+#'
+#' This is intended as a support function for triangle plots. To plot multiple points on the same triangle plot, run this function on grouped/split datasets
+#'
+#' @param mseh_categories A vector with categories, as letters (see *codify_triangle_categories*).
+#' @param ref_categories A character vector with three elements, the three categories.
+#' @return A data frame that can be used for triangle plots.
+#' @export
 count_data_for_triangle = function (mesh_categories, ref_categories) {
   DF = data.frame(Category = mesh_categories)
   cat_cols = purrr::map_dfc(ref_categories, function (tri_cat) {
