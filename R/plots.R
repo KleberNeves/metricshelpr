@@ -136,15 +136,41 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
 #' @param tri_data A dataset with the ternary data percentages.
 #' @return The triangle plot.
 #' @export
-triangle.plot = function (tri_data) {
-  p = ggtern::ggtern(data = tri_data,
-             aes(x = N_C, y = N_A, z = N_H, group = Author)) +
-    ggplot2::geom_point(data = tri_data %>% filter(Period == "Zika Papers"),
-               size = 1) +
-    ggplot2::geom_line() +
-    ggtern::geom_Risoprop(value = 0.5, linetype = "dashed", color = "blue") +
-    ggplot2::theme_bw() + ggtern::theme_nogrid_minor() +
-    ggplot2::labs(title = "Biomedicine Triangle Plot", x = "Cell./Mol.", y = "Animal", z = "Human") + theme(axis.title = element_text(size = 9))
+triangle.plot = function (tri_data, tri_cols, tri_labs = NULL, plot_translation_axis = F) {
+  if (is.null(tri_labs)) { tri_labs =  tri_cols }
+  p = ggtern::ggtern(data = tri_data) +
+    ggplot2::aes_string(x = tri_cols[1], y = tri_cols[2], z = tri_cols[3]) +
+    ggplot2::geom_point(size = 2) +
+    ggplot2::labs(x = tri_labs[1], y = tri_labs[2], z = tri_labs[3]) +
+    ggtern::theme_nogrid_minor()
+
+  if (plot_translation_axis) {
+    p = p + ggtern::geom_Risoprop(value = 0.5, linetype = "dashed", color = "blue")
+  }
 
   p
 }
+
+
+# ref_table must have one letter per category
+codify_triangle_categories = function (terms, ref_table) {
+    term_categories = purrr::map_chr(terms, function (x) {
+      terms_df = data.frame(Term = unlist(stringr::str_split(x, ";")))
+      terms_df = merge(terms_df, ref_table, by = "Term")
+      categories = paste0(sort(unique(terms_df$Category)), collapse = "")
+      categories
+    })
+    term_categories
+}
+
+
+count_data_for_triangle = function (mesh_categories, ref_categories) {
+  DF = data.frame(Category = mesh_categories)
+  cat_cols = purrr::map_dfc(ref_categories, function (tri_cat) {
+    df = data.frame(x = sum(stringr::str_detect(DF$Category, tri_cat)))
+    colnames(df) = tri_cat
+    df
+  })
+  cat_cols
+}
+
