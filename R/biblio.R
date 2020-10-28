@@ -49,7 +49,7 @@ get.biblio.data = function (generations, data_folder) {
 #' @param M A bibliometrix dataset.
 #' @return A data frame with the author order and country data.
 #' @export
-extract.author.country.order = function (M) {
+extract_author_country_order = function (M) {
   author_country_data = ldply(1:nrow(M), function (i) {
     title = M[i, "TI"]
     affil = M[i, "C1"]
