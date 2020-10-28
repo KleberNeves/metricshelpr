@@ -50,7 +50,7 @@ get.biblio.data = function (generations, data_folder) {
 #' @return A data frame with the author order and country data.
 #' @export
 extract_author_country_order = function (M) {
-  author_country_data = ldply(1:nrow(M), function (i) {
+  author_country_data = plyr::ldply(1:nrow(M), function (i) {
     title = M[i, "TI"]
     affil = M[i, "C1"]
     author_field = M[i, "AU"]
