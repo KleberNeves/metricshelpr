@@ -140,3 +140,42 @@ extract_author_country_order = function (M) {
 
   author_country_data
 }
+
+#' Extracts author countries for each paper
+#'
+#' From a M bibliometrix data frame, extracts the author's affiliation countries
+#' from the C1 field.
+#'
+#' @param M A bibliometrix dataset.
+#' @param count_unique Flag to indicate whether to return an unique list or to include repeated.
+#' @return A vector with the countries.
+#' @export
+extract_countries = function (M, count_unique = F) {
+  purrr::map_chr(M$C1, function (affil) {
+    # Extracts affiliations per group of authors
+    affil = stringr::str_replace_all(affil, "; \\[", " [")
+    affil = stringr::str_replace_all(affil, "(\\[.+?\\])", "]")
+    affil = unlist(stringr::str_split(affil, "\\] "))
+    affil = affil[2:length(affil)]
+    affil = affil[affil != ""]
+
+    # Extract countries
+    countries = unlist(purrr::map(affil, function (x) {
+      x = unlist(stringr::str_split(x, "; "))
+      x = stringr::str_trim(x)
+      x = stringr::str_remove_all(x, "[.]")
+      x = stringr::str_remove(x, ".+, ")
+      x = stringr::str_remove_all(x, "[;]")
+      x[stringr::str_which(x, " USA$")] = "USA"
+      x = paste(unique(x), collapse = ";")
+      x
+    }))
+
+    if (count_unique) {
+      countries = paste(unique(countries), collapse = ";")
+    } else {
+      countries = paste(countries, collapse = ";")
+    }
+    countries
+  })
+}
