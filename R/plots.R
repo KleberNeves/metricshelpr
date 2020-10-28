@@ -210,3 +210,74 @@ count_data_for_triangle = function (mesh_categories, ref_categories) {
   cat_cols
 }
 
+#' Plots counts as a barplot
+#'
+#' Plots a table as a bar plot. The first column contains the names, the second contains the counts.
+#'
+#' @param df A data frame with two columns.
+#' @param bar_color The color of the bars.
+#' @param ylab The label for the count axis.
+#' @param title The title for the plot.
+#' @return A ggplot object.
+#' @export
+plot_counts = function (df, bar_color, ylab, title) {
+  colnames(df) = c("CAT","COUNT")
+  ggplot(df) +
+    aes(x = reorder(CAT, COUNT), y = COUNT) +
+    geom_col(fill = bar_color) +
+    labs(x = "", y = ylab, title = title) +
+    coord_flip()
+}
+
+#' Plots RPYS
+#'
+#' RPYS is the Referenced Publication Years Spectroscopy (see https://doi.org/10.1002/asi.23089).
+#' It is a histogram of the years of the cited references for a literature corpus.
+#'
+#' @param df A bibliometrix M dataset.
+#' @param bar_color The color of the bars.
+#' @param title The title for the plot.
+#' @return A ggplot object.
+#' @export
+plot_rpys = function (df, bar_color, title) {
+  refs = unlist(df$CR %>% str_split(";"))
+
+  ref_years = data.frame(Year = as.numeric(refs %>% str_extract(" [0-9]{4}"))) %>%
+    group_by(Year) %>%
+    summarise(N = n())
+
+  ggplot(ref_years) +
+    aes(x = Year, y = N) +
+    geom_col(fill = bar_color) +
+    scale_x_continuous(breaks = pretty_breaks(10)) +
+    ylim(c(0,1+max(ref_years$N))) +
+    labs(x = "Year", y = "Number of articles", title = title)
+}
+
+#' Plots a wordcloud of keywords
+#'
+#' Uses ggwordcloud to plot a word cloud from the ID field from Web of Science (Keywords Plus).
+#'
+#' @param M A bibliometrix M data frame.
+#' @param title The plot title.
+#' @param n_words Number of words to include (most frequent ones).
+#' @return A ggplot object.
+#' @export
+plot_keywordcloud = function (M, title, n_words = 70) {
+  words = M$ID %>%
+    str_split(";") %>%
+    unlist() %>%
+    data.frame(word = .) %>%
+    group_by(word) %>%
+    summarise(freq = n())
+
+  cloud_words = words %>% slice_max(freq, n = n_words) %>%
+    mutate(angle = 90 * sample(c(0, 1), n(), replace = TRUE, prob = c(75, 25)))
+
+  ggplot(cloud_words) +
+    aes(label = word, size = freq, angle = angle,
+        color = factor(sample.int(10, nrow(cloud_words), replace = TRUE))) +
+    scale_size_area(max_size = 20) +
+    geom_text_wordcloud(eccentricity = 1, shape = "circle", rm_outside = T) +
+    theme_minimal() + labs(title = title)
+}
