@@ -38,20 +38,20 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   layout_m = ggraph::create_layout(bsk, layout = "auto")
 
   # Extract numeric years
-  layout_m$Year = as.numeric(stringr::str_extract(V(bsk)$name, "[0-9]{4,}"))
+  layout_m$Year = as.numeric(stringr::str_extract(igraph::V(bsk)$name, "[0-9]{4,}"))
   Years = layout_m$Year
 
   # Defines size of nodes
   # layout_m$node.size = 10 * (base.size + 2 * base.size * M$TC / max(M$TC))
   # TODO for some reason, setting node.size via aes(size = node.size) from layout_m does not work
-  V(bsk)$node.size = (base.size / 2 + 2 * base.size * M$TC / max(M$TC))
+  igraph::V(bsk)$node.size = (base.size / 2 + 2 * base.size * M$TC / max(M$TC))
 
   # Name of nodes is the paper title, truncated at 50 characters
   layout_m$id = stringr::str_to_upper(M$TI)
   layout_m$name.truncated = stringr::str_sub(M$TI, 1, 60)
 
   # Breaks the label in three lines for longer titles and sets node properties
-  layout_m$name.label = ifelse(V(bsk)$node.size < 0.8 * base.size,
+  layout_m$name.label = ifelse(igraph::V(bsk)$node.size < 0.8 * base.size,
                                "", paste0(
                                  stringr::str_sub(M$TI, 1, 20),"\n",
                                  stringr::str_sub(M$TI, 21, 40),"\n",
@@ -60,12 +60,12 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   )
 
   # Separates papers in clusters and add cluster data to layout, to use for y pos
-  V(bsk)$id = layout_m$id # will use to check for cluster belonging in the loop below
+  igraph::V(bsk)$id = layout_m$id # will use to check for cluster belonging in the loop below
   dg = igraph::decompose.graph(bsk, mode = "weak")
   layout_m$cluster = 0
   for (k in 1:length(dg)) {
     dec = dg[[k]]
-    layout_m$cluster = ifelse(layout_m$id %in% V(dec)$id, k, layout_m$cluster)
+    layout_m$cluster = ifelse(layout_m$id %in% igraph::V(dec)$id, k, layout_m$cluster)
   }
 
   # Join isolated nodes in a single cluster
@@ -117,10 +117,10 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
     panel.grid.minor.y = ggplot2::element_blank(), panel.grid.major.y = ggplot2::element_blank(),
     panel.grid.minor.x = ggplot2::element_blank(),
 
-    axis.line.y = ggplot2::element_blank(), axis.text.y = element_blank(),
-    axis.ticks.y = ggplot2::element_blank(), axis.title.y = element_blank(),
+    axis.line.y = ggplot2::element_blank(), axis.text.y = ggplot2::eelement_blank(),
+    axis.ticks.y = ggplot2::element_blank(), axis.title.y = ggplot2::eelement_blank(),
 
-    axis.title.x = ggplot2::element_blank(), axis.line.x = element_blank(),
+    axis.title.x = ggplot2::element_blank(), axis.line.x = ggplot2::eelement_blank(),
     axis.text.x = ggplot2::element_text(face = "bold")
   )
 }
@@ -146,14 +146,14 @@ plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", lay
     stop('Missing column AU_CO:\nHINT: Run M = metaTagExtraction(M, Field = "AU_CO", sep = ";")')
   }
 
-  NetMatrix = biblioNetwork(M, analysis = edge_type, network = node_type, sep = ";", n = n)
+  NetMatrix = bibliometrix::biblioNetwork(M, analysis = edge_type, network = node_type, sep = ";", n = n)
 
   # The temp file thing is to suppress the plot printed within networkPlot
   # I want just the network, I'll plot it myself below
   ff = tempfile()
-  png(filename = ff)
-  NetGraph = (networkPlot(NetMatrix, n = dim(NetMatrix)[1], Title = title, type = layout, size = T, remove.multiple = F, labelsize = label_size, cluster = cluster_method, edgesize = edge_size))$graph
-  dev.off()
+  grDevices::png(filename = ff)
+  NetGraph = (bibliometrix::networkPlot(NetMatrix, n = dim(NetMatrix)[1], Title = title, type = layout, size = T, remove.multiple = F, labelsize = label_size, cluster = cluster_method, edgesize = edge_size))$graph
+  grDevices::dev.off()
   unlink(ff)
 
   layout_m = ggraph::create_layout(NetGraph, layout = layout)
