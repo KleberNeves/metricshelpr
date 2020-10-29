@@ -26,8 +26,8 @@ get.full.mesh = function(pmids) {
   record.parts = lapply(parts, get.part)
 
   print("Matching MeSH terms ...")
-  D = ldply(record.parts, function(record.part) {
-    D2 = ldply(record.part@Mesh, function (x) {
+  D = plyr::ldply(record.parts, function(record.part) {
+    D2 = plyr::ldply(record.part@Mesh, function (x) {
       if (all(is.na(x))) {
         return (data.frame(MeshFullTerms = "No Mesh Terms",
                            MeshHeadings = "No Mesh Terms"))

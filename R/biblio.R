@@ -66,12 +66,12 @@ extract_author_country_order = function (M) {
     }
 
     # Extract author list and positions to be merged later
-    author_list = unlist(str_split(author_field, ";"))
+    author_list = unlist(stringr::str_split(author_field, ";"))
     author_list = data.frame(Author = author_list, Position = 1:length(author_list))
     author_list$NegPosition = author_list$Position - nrow(author_list) - 1
 
     # Extracts author list from affiliation text
-    authors = unlist(str_extract_all(affil, "(\\[.+?\\])"))
+    authors = unlist(stringr::str_extract_all(affil, "(\\[.+?\\])"))
     authors = stringr::str_replace_all(authors, "[.];", ".")
     nauthors_per_group = stringr::str_count(authors, ";") + 1
     authors = stringr::str_remove_all(authors, "\\[")
@@ -122,7 +122,7 @@ extract_author_country_order = function (M) {
           dosdas = which(x %in% c("DE","DOS","DAS","DA")) + 1
           x = x[-dosdas]
         }
-        x = str_extract(x, "[A-Z]")
+        x = stringr::str_extract(x, "[A-Z]")
         # } else { x = c() }
         fullname = paste(c(first_name, " ", x), collapse = "")
         fullname

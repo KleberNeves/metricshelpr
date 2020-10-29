@@ -35,10 +35,10 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
 
   # Creates the layout from graphs, to be able to specify positioning of nodes
   bsk = igraph::simplify(bsk, remove.multiple = T, remove.loops = T)
-  layout_m = igraph::create_layout(bsk, layout = "auto")
+  layout_m = ggraph::create_layout(bsk, layout = "auto")
 
   # Extract numeric years
-  layout_m$Year = as.numeric(str_extract(V(bsk)$name, "[0-9]{4,}"))
+  layout_m$Year = as.numeric(stringr::str_extract(V(bsk)$name, "[0-9]{4,}"))
   Years = layout_m$Year
 
   # Defines size of nodes
@@ -69,8 +69,8 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   }
 
   # Join isolated nodes in a single cluster
-  d = layout_m %>% group_by(cluster) %>% summarise(n = n())
-  isolated = (d %>% filter(n == 1))$cluster
+  d = layout_m %>% dplyr::group_by(cluster) %>% dplyr::summarise(n = n())
+  isolated = (d %>% dplyr::filter(n == 1))$cluster
   layout_m$cluster = ifelse(layout_m$cluster %in% isolated, 0, layout_m$cluster)
 
   # Sets position of nodes based on cluster and year
@@ -79,7 +79,7 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   layout_m$py = (posy$py) / (posy$maxpy + 1)
   layout_m$py = layout_m$py + ifelse(layout_m$Year %% 2 == 0, 0.5, 0)
   pheight = max(posy$maxpy) * base.size / 2
-  layout_m$y = layout_m$py * pheight + rnorm(nrow(layout_m), 0, layout_m$py * 1.5)
+  layout_m$y = layout_m$py * pheight + stats::rnorm(nrow(layout_m), 0, layout_m$py * 1.5)
   layout_m$y = layout_m$y - min(layout_m$y)
 
   # Builds ggplot
@@ -91,8 +91,8 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
 
   g = g +
     ggraph::geom_edge_link(width = 1, check_overlap = T, edge_alpha = 0.8, color = "grey") +
-    ggraph::geom_node_point(aes(color = as.factor(cluster)), size = V(bsk)$node.size, alpha = 0.8) +
-    ggraph::geom_node_text(aes(label = name.label), size = 2.2,
+    ggraph::geom_node_point(ggplot2::aes(color = as.factor(cluster)), size = igraph::V(bsk)$node.size, alpha = 0.8) +
+    ggraph::geom_node_text(ggplot2::aes(label = name.label), size = 2.2,
                    repel = F, color = "black", alpha = 1) +
     ggplot2::scale_x_continuous(labels = as.character(seq(min(Years), max(Years))), breaks = seq(min(Years), max(Years)), expand = c(.1, .1)) +
     ggplot2::labs(title = "Cognitive Career Plot (Reference Coupling)", x = "", y = "")
@@ -113,16 +113,72 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   g + ggplot2::theme_minimal() + ggplot2::theme(
     legend.position = "none",
 
-    panel.background = element_rect(fill = "grey97", color = "grey97"),
-    panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(),
-    panel.grid.minor.x = element_blank(),
+    panel.background = ggplot2::element_rect(fill = "grey97", color = "grey97"),
+    panel.grid.minor.y = ggplot2::element_blank(), panel.grid.major.y = ggplot2::element_blank(),
+    panel.grid.minor.x = ggplot2::element_blank(),
 
-    axis.line.y = element_blank(), axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(), axis.title.y = element_blank(),
+    axis.line.y = ggplot2::element_blank(), axis.text.y = element_blank(),
+    axis.ticks.y = ggplot2::element_blank(), axis.title.y = element_blank(),
 
-    axis.title.x = element_blank(), axis.line.x = element_blank(),
-    axis.text.x = element_text(face = "bold")
+    axis.title.x = ggplot2::element_blank(), axis.line.x = element_blank(),
+    axis.text.x = ggplot2::element_text(face = "bold")
   )
+}
+
+#' Plots counts as a barplot
+#'
+#' Plots a table as a bar plot. The first column contains the names, the second contains the counts.
+#'
+#' @param M A bibliometrix M dataframe.
+#' @param edge_type The type of entity that edges represent (passed to biblioNetwork). Can be "collaboration", "coupling", "co-occurrences" or "co-citation".
+#' @param node_type The type of entity that nodes represent (passed to biblioNetwork). Can be "authors", "references", "sources", "countries","keywords", "author_keywords", "titles", or "abstracts".
+#' @param n Number of nodes to be included in the plot (the ones with the highest degrees are selected).
+#' @param title The title for the plot.
+#' @param layout The layout type for the network (passed to ggraph::create_layout). Can be "auto" (default), "dendrogram", "manual", "linear", "matrix", "treemap", "circlepack", "partition", "hive".
+#' @param cluster_method The method for clustering (passed to bibliometrix::networkPlot). Can be "none" (default), optimal", "louvain","infomap","edge_betweenness","walktrap", "spinglass", "leading_eigen" or "fast_greedy".
+#' @param label_size A numeric vector with the range (min, max) of size for labels, passed to the ggplot2::scale_* function.
+#' @param edge_size A numeric vector with the range (min, max) of size for edges, passed to the ggplot2::scale_* function.
+#' @param node_size A numeric vector with the range (min, max) of size for nodes, passed to the ggplot2::scale_* function.
+#' @return A ggplot object.
+#' @export
+plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", layout = "auto", cluster_method = "none", label_size = 4, edge_size = c(0.2, 1), node_size = c(2,10)) {
+  if (node_type == "countries" & is.null(M$AU_CO)) {
+    stop('Missing column AU_CO:\nHINT: Run M = metaTagExtraction(M, Field = "AU_CO", sep = ";")')
+  }
+
+  NetMatrix = biblioNetwork(M, analysis = edge_type, network = node_type, sep = ";", n = n)
+
+  # The temp file thing is to suppress the plot printed within networkPlot
+  # I want just the network, I'll plot it myself below
+  ff = tempfile()
+  png(filename = ff)
+  NetGraph = (networkPlot(NetMatrix, n = dim(NetMatrix)[1], Title = title, type = layout, size = T, remove.multiple = F, labelsize = label_size, cluster = cluster_method, edgesize = edge_size))$graph
+  dev.off()
+  unlink(ff)
+
+  layout_m = ggraph::create_layout(NetGraph, layout = layout)
+  layout_m$label = stringr::str_to_title(layout_m$label)
+  layout_m$Cluster = as.factor(layout_m$community)
+
+  p = ggraph::ggraph(layout_m) +
+    ggraph::geom_edge_link(ggplot2::aes(width = width, alpha = width), check_overlap = T, color = "grey") +
+    ggraph::geom_node_point(ggplot2::aes(color = Cluster, size = size), alpha = 0.8) +
+    ggraph::geom_node_text(ggplot2::aes(label = label), size = label_size,
+                           repel = F, color = "black", alpha = 1) +
+    ggplot2::labs(title = title) +
+    ggplot2::scale_size(range = node_size) +
+    ggraph::scale_edge_alpha(range = c(0.3, 1)) +
+    ggraph::scale_edge_width(range = edge_size) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(
+      panel.grid = ggplot2::element_blank(),
+      axis.line = ggplot2::element_blank(),
+      axis.title = ggplot2::element_blank(),
+      axis.text = ggplot2::element_blank(),
+      legend.position = "none"
+    )
+
+  p
 }
 
 #' Plots a triangle plot
@@ -135,7 +191,7 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
 #'
 #' @param tri_data A dataset with the values for each of the three categories.
 #' @param tri_cols The name of the columns in the dataset which represent the categories.
-#' @param tri_labels The name of the axes (if NULL, defaults to the same name as the columns).
+#' @param tri_labs The name of the axes (if NULL, defaults to the same name as the columns).
 #' @param plot_translation_axis Whether to plot the line of translation, from AC to H.
 #' @return The triangle plot.
 #' @export
@@ -196,7 +252,7 @@ codify_triangle_categories = function (terms, ref_table) {
 #'
 #' This is intended as a support function for triangle plots. To plot multiple points on the same triangle plot, run this function on grouped/split datasets
 #'
-#' @param mseh_categories A vector with categories, as letters (see *codify_triangle_categories*).
+#' @param mesh_categories A vector with categories, as letters (see *codify_triangle_categories*).
 #' @param ref_categories A character vector with three elements, the three categories.
 #' @return A data frame that can be used for triangle plots.
 #' @export
@@ -222,11 +278,11 @@ count_data_for_triangle = function (mesh_categories, ref_categories) {
 #' @export
 plot_counts = function (df, bar_color, ylab, title) {
   colnames(df) = c("CAT","COUNT")
-  ggplot(df) +
-    aes(x = reorder(CAT, COUNT), y = COUNT) +
-    geom_col(fill = bar_color) +
-    labs(x = "", y = ylab, title = title) +
-    coord_flip()
+  ggplot2::ggplot(df) +
+    ggplot2::aes(x = stats::reorder(CAT, COUNT), y = COUNT) +
+    ggplot2::geom_col(fill = bar_color) +
+    ggplot2::labs(x = "", y = ylab, title = title) +
+    ggplot2::coord_flip()
 }
 
 #' Plots RPYS
@@ -240,18 +296,18 @@ plot_counts = function (df, bar_color, ylab, title) {
 #' @return A ggplot object.
 #' @export
 plot_rpys = function (df, bar_color, title) {
-  refs = unlist(df$CR %>% str_split(";"))
+  refs = unlist(df$CR %>% stringr::str_split(";"))
 
-  ref_years = data.frame(Year = as.numeric(refs %>% str_extract(" [0-9]{4}"))) %>%
-    group_by(Year) %>%
-    summarise(N = n())
+  ref_years = data.frame(Year = as.numeric(refs %>% stringr::str_extract(" [0-9]{4}"))) %>%
+    dplyr::group_by(Year) %>%
+    dplyr::summarise(N = n())
 
-  ggplot(ref_years) +
-    aes(x = Year, y = N) +
-    geom_col(fill = bar_color) +
-    scale_x_continuous(breaks = pretty_breaks(10)) +
-    ylim(c(0,1+max(ref_years$N))) +
-    labs(x = "Year", y = "Number of articles", title = title)
+  ggplot2::ggplot(ref_years) +
+    ggplot2::aes(x = Year, y = N) +
+    ggplot2::geom_col(fill = bar_color) +
+    ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(10)) +
+    ggplot2::ylim(c(0,1+max(ref_years$N))) +
+    ggplot2::labs(x = "Year", y = "Number of articles", title = title)
 }
 
 #' Plots a wordcloud of keywords
@@ -265,19 +321,19 @@ plot_rpys = function (df, bar_color, title) {
 #' @export
 plot_keywordcloud = function (M, title, n_words = 70) {
   words = M$ID %>%
-    str_split(";") %>%
+    stringr::str_split(";") %>%
     unlist() %>%
     data.frame(word = .) %>%
-    group_by(word) %>%
-    summarise(freq = n())
+    dplyr::group_by(word) %>%
+    dplyr::summarise(freq = n())
 
-  cloud_words = words %>% slice_max(freq, n = n_words) %>%
-    mutate(angle = 90 * sample(c(0, 1), n(), replace = TRUE, prob = c(75, 25)))
+  cloud_words = words %>% dplyr::slice_max(freq, n = n_words) %>%
+    dplyr::mutate(angle = 90 * sample(c(0, 1), n(), replace = TRUE, prob = c(75, 25)))
 
-  ggplot(cloud_words) +
-    aes(label = word, size = freq, angle = angle,
+  ggplot2::ggplot(cloud_words) +
+    ggplot2::aes(label = word, size = freq, angle = angle,
         color = factor(sample.int(10, nrow(cloud_words), replace = TRUE))) +
-    scale_size_area(max_size = 20) +
-    geom_text_wordcloud(eccentricity = 1, shape = "circle", rm_outside = T) +
-    theme_minimal() + labs(title = title)
+    ggplot2::scale_size_area(max_size = 20) +
+    ggwordcloud::geom_text_wordcloud(eccentricity = 1, shape = "circle", rm_outside = T) +
+    ggplot2::theme_minimal() + ggplot2::labs(title = title)
 }
