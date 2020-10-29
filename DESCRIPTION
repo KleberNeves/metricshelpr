@@ -30,6 +30,7 @@ Imports:
     ggraph,
     ggwordcloud,
     scales,
-    ggtern
+    ggtern,
+    grDevices
 Suggests: 
     testthat (>= 2.1.0)
