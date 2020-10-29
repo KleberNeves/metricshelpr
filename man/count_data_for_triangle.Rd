@@ -7,9 +7,9 @@
 count_data_for_triangle(mesh_categories, ref_categories)
 }
 \arguments{
-\item{ref_categories}{A character vector with three elements, the three categories.}
+\item{mesh_categories}{A vector with categories, as letters (see *codify_triangle_categories*).}
 
-\item{mseh_categories}{A vector with categories, as letters (see *codify_triangle_categories*).}
+\item{ref_categories}{A character vector with three elements, the three categories.}
 }
 \value{
 A data frame that can be used for triangle plots.

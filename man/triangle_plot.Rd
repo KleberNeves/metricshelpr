@@ -11,9 +11,9 @@ triangle_plot(tri_data, tri_cols, tri_labs = NULL, plot_translation_axis = F)
 
 \item{tri_cols}{The name of the columns in the dataset which represent the categories.}
 
-\item{plot_translation_axis}{Whether to plot the line of translation, from AC to H.}
+\item{tri_labs}{The name of the axes (if NULL, defaults to the same name as the columns).}
 
-\item{tri_labels}{The name of the axes (if NULL, defaults to the same name as the columns).}
+\item{plot_translation_axis}{Whether to plot the line of translation, from AC to H.}
 }
 \value{
 The triangle plot.
