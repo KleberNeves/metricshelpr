@@ -25,6 +25,11 @@ Imports:
     xml2,
     Matrix,
     purrr,
-    glue
+    glue,
+    RISmed,
+    ggraph,
+    ggwordcloud,
+    scales,
+    ggtern
 Suggests: 
     testthat (>= 2.1.0)
