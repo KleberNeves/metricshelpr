@@ -125,9 +125,9 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   )
 }
 
-#' Plots counts as a barplot
+#' Plots a bibliographic network
 #'
-#' Plots a table as a bar plot. The first column contains the names, the second contains the counts.
+#' Wrapper around bibliometrix::biblioNetwork and bibliometrix::networkPlot, to be able to change the appearance of the network.
 #'
 #' @param M A bibliometrix M dataframe.
 #' @param edge_type The type of entity that edges represent (passed to biblioNetwork). Can be "collaboration", "coupling", "co-occurrences" or "co-citation".
@@ -139,30 +139,57 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
 #' @param label_size A numeric vector with the range (min, max) of size for labels, passed to the ggplot2::scale_* function.
 #' @param edge_size A numeric vector with the range (min, max) of size for edges, passed to the ggplot2::scale_* function.
 #' @param node_size A numeric vector with the range (min, max) of size for nodes, passed to the ggplot2::scale_* function.
+#' @param min_degree Minimum number of edges a node must have to be included.
+#' @param get_network Whether to return the network as well as the plot. Default is FALSE.
 #' @return A ggplot object.
 #' @export
-plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", layout = "auto", cluster_method = "none", label_size = 4, edge_size = c(0.2, 1), node_size = c(2,10)) {
+plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", layout = "auto", cluster_method = "none", label_size = 4, edge_size = c(0.2, 1), node_size = c(2,10), aes_color = NULL, min_degree = 1, get_network = FALSE) {
   if (node_type == "countries" & is.null(M$AU_CO)) {
     stop('Missing column AU_CO:\nHINT: Run M = metaTagExtraction(M, Field = "AU_CO", sep = ";")')
   }
 
-  NetMatrix = bibliometrix::biblioNetwork(M, analysis = edge_type, network = node_type, sep = ";", n = n)
+  delim = ";"
+  if (node_type %in% c("references") & edge_type %in% c("co-citation","coupling")) { delim = ".  " }
+
+  NetMatrix = bibliometrix::biblioNetwork(M, analysis = edge_type, network = node_type, sep = delim, n = n, shortlabel = F)
 
   # The temp file thing is to suppress the plot printed within networkPlot
   # I want just the network, I'll plot it myself below
   ff = tempfile()
   grDevices::png(filename = ff)
-  NetGraph = (bibliometrix::networkPlot(NetMatrix, n = dim(NetMatrix)[1], Title = title, type = layout, size = T, remove.multiple = F, labelsize = label_size, cluster = cluster_method, edgesize = edge_size))$graph
+  NetGraph = (bibliometrix::networkPlot(NetMatrix, n = n, degree = min_degree, Title = title, type = layout, size = T, remove.multiple = F, labelsize = label_size, cluster = cluster_method, edgesize = edge_size))$graph
   grDevices::dev.off()
   unlink(ff)
-
+  # browser()
   layout_m = ggraph::create_layout(NetGraph, layout = layout)
+
+  if (!is.null(aes_color)) {
+    layout_m$capslabel = stringr::str_to_upper(layout_m$label) %>%
+      str_remove("(-[A-Z])+?$")
+    pre_nrow = nrow(layout_m)
+    layout_m = merge(layout_m, M[,c(aes_color,"Short Title")],
+                     by.x = "capslabel", by.y = "Short Title")
+    if (pre_nrow != nrow(layout_m)) {
+      stop(glue::glue("Could not get attribute from M."))
+    }
+    layout_m$node_color = as.factor(layout_m[,aes_color])
+  }
+
   layout_m$label = stringr::str_to_title(layout_m$label)
   layout_m$Cluster = as.factor(layout_m$community)
 
   p = ggraph::ggraph(layout_m) +
-    ggraph::geom_edge_link(ggplot2::aes(width = width, alpha = width), check_overlap = T, color = "grey") +
-    ggraph::geom_node_point(ggplot2::aes(color = Cluster, size = size), alpha = 0.8) +
+    ggraph::geom_edge_link(ggplot2::aes(width = width, alpha = width), check_overlap = T, color = "grey")
+
+  if (is.null(aes_color)) {
+    p = p +
+      ggraph::geom_node_point(ggplot2::aes(color = Cluster, size = size), alpha = 0.8)
+  } else {
+    p = p +
+      ggraph::geom_node_point(ggplot2::aes(color = node_color, size = size), alpha = 0.8)
+  }
+
+  p = p +
     ggraph::geom_node_text(ggplot2::aes(label = label), size = label_size,
                            repel = F, color = "black", alpha = 1) +
     ggplot2::labs(title = title) +
@@ -178,7 +205,11 @@ plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", lay
       legend.position = "none"
     )
 
-  p
+  if (get_network) {
+    list(plot = p, net = NetGraph)
+  } else {
+    p
+  }
 }
 
 #' Plots a triangle plot
@@ -195,13 +226,17 @@ plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", lay
 #' @param plot_translation_axis Whether to plot the line of translation, from AC to H.
 #' @return The triangle plot.
 #' @export
-triangle_plot = function (tri_data, tri_cols, tri_labs = NULL, plot_translation_axis = F) {
+triangle_plot = function (tri_data, tri_cols, tri_labs = NULL, plot_translation_axis = F, add_density = T) {
   if (is.null(tri_labs)) { tri_labs =  tri_cols }
   p = ggtern::ggtern(data = tri_data) +
     ggplot2::aes_string(x = tri_cols[2], y = tri_cols[1], z = tri_cols[3]) +
     ggplot2::geom_point(size = 2) +
     ggplot2::labs(x = tri_labs[2], y = tri_labs[1], z = tri_labs[3]) +
     ggtern::theme_nogrid_minor()
+
+  if (add_density) {
+    p = p + ggtern::geom_density_tern()
+  }
 
   if (plot_translation_axis) {
     p = p + ggtern::geom_Risoprop(value = 0.5, linetype = "dashed", color = "blue")
@@ -218,7 +253,7 @@ triangle_plot = function (tri_data, tri_cols, tri_labs = NULL, plot_translation_
 #' @return The triangle plot.
 #' @export
 biomed_triangle_plot = function (tri_data) {
-  triangle_plot(tri_data, c("A","C","H"), c("Animal","Cellular","Human"), T)
+  triangle_plot(tri_data, c("A","C","H"), c("Animal","Mol./Cell.","Human"), T, F)
 }
 
 #' Generates codes based on MeSH terms
