@@ -2,7 +2,7 @@
 % Please edit documentation in R/plots.R
 \name{plot_biblio_network}
 \alias{plot_biblio_network}
-\title{Plots counts as a barplot}
+\title{Plots a bibliographic network}
 \usage{
 plot_biblio_network(
   M,
@@ -14,7 +14,10 @@ plot_biblio_network(
   cluster_method = "none",
   label_size = 4,
   edge_size = c(0.2, 1),
-  node_size = c(2, 10)
+  node_size = c(2, 10),
+  aes_color = NULL,
+  min_degree = 1,
+  get_network = FALSE
 )
 }
 \arguments{
@@ -37,10 +40,14 @@ plot_biblio_network(
 \item{edge_size}{A numeric vector with the range (min, max) of size for edges, passed to the ggplot2::scale_* function.}
 
 \item{node_size}{A numeric vector with the range (min, max) of size for nodes, passed to the ggplot2::scale_* function.}
+
+\item{min_degree}{Minimum number of edges a node must have to be included.}
+
+\item{get_network}{Whether to return the network as well as the plot. Default is FALSE.}
 }
 \value{
 A ggplot object.
 }
 \description{
-Plots a table as a bar plot. The first column contains the names, the second contains the counts.
+Wrapper around bibliometrix::biblioNetwork and bibliometrix::networkPlot, to be able to change the appearance of the network.
 }

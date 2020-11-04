@@ -4,7 +4,13 @@
 \alias{triangle_plot}
 \title{Plots a triangle plot}
 \usage{
-triangle_plot(tri_data, tri_cols, tri_labs = NULL, plot_translation_axis = F)
+triangle_plot(
+  tri_data,
+  tri_cols,
+  tri_labs = NULL,
+  plot_translation_axis = F,
+  add_density = T
+)
 }
 \arguments{
 \item{tri_data}{A dataset with the values for each of the three categories.}
