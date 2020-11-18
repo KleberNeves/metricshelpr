@@ -228,7 +228,7 @@ extract_author_affiliations = function (M) {
     affil = affil[affil != ""]
 
     affils = rep(affil, nauthors_per_group) %>%
-      str_remove_all("(;$)|([.] $)")
+      stringr::str_remove_all("(;$)|([.] $)")
 
     # Extract countries from affiliations
     countries = unlist(plyr::llply(affil, function (x) {

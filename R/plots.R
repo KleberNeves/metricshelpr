@@ -117,10 +117,10 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
     panel.grid.minor.y = ggplot2::element_blank(), panel.grid.major.y = ggplot2::element_blank(),
     panel.grid.minor.x = ggplot2::element_blank(),
 
-    axis.line.y = ggplot2::element_blank(), axis.text.y = ggplot2::eelement_blank(),
-    axis.ticks.y = ggplot2::element_blank(), axis.title.y = ggplot2::eelement_blank(),
+    axis.line.y = ggplot2::element_blank(), axis.text.y = ggplot2::element_blank(),
+    axis.ticks.y = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank(),
 
-    axis.title.x = ggplot2::element_blank(), axis.line.x = ggplot2::eelement_blank(),
+    axis.title.x = ggplot2::element_blank(), axis.line.x = ggplot2::element_blank(),
     axis.text.x = ggplot2::element_text(face = "bold")
   )
 }
@@ -143,7 +143,7 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
 #' @param get_network Whether to return the network as well as the plot. Default is FALSE.
 #' @return A ggplot object.
 #' @export
-plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", layout = "auto", cluster_method = "none", label_size = 4, edge_size = c(0.2, 1), node_size = c(2,10), aes_color = NULL, min_degree = 1, get_network = FALSE) {
+plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", layout = "auto", cluster_method = "none", label_size = 4, edge_size = c(0.2, 1), node_size = c(2,10), min_degree = 1, get_network = FALSE) {
   if (node_type == "countries" & is.null(M$AU_CO)) {
     stop('Missing column AU_CO:\nHINT: Run M = metaTagExtraction(M, Field = "AU_CO", sep = ";")')
   }
@@ -160,20 +160,8 @@ plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", lay
   NetGraph = (bibliometrix::networkPlot(NetMatrix, n = n, degree = min_degree, Title = title, type = layout, size = T, remove.multiple = F, labelsize = label_size, cluster = cluster_method, edgesize = edge_size))$graph
   grDevices::dev.off()
   unlink(ff)
-  # browser()
-  layout_m = ggraph::create_layout(NetGraph, layout = layout)
 
-  if (!is.null(aes_color)) {
-    layout_m$capslabel = stringr::str_to_upper(layout_m$label) %>%
-      str_remove("(-[A-Z])+?$")
-    pre_nrow = nrow(layout_m)
-    layout_m = merge(layout_m, M[,c(aes_color,"Short Title")],
-                     by.x = "capslabel", by.y = "Short Title")
-    if (pre_nrow != nrow(layout_m)) {
-      stop(glue::glue("Could not get attribute from M."))
-    }
-    layout_m$node_color = as.factor(layout_m[,aes_color])
-  }
+  layout_m = ggraph::create_layout(NetGraph, layout = layout)
 
   layout_m$label = stringr::str_to_title(layout_m$label)
   layout_m$Cluster = as.factor(layout_m$community)
@@ -224,6 +212,7 @@ plot_biblio_network = function (M, edge_type, node_type, n = 10, title = "", lay
 #' @param tri_cols The name of the columns in the dataset which represent the categories.
 #' @param tri_labs The name of the axes (if NULL, defaults to the same name as the columns).
 #' @param plot_translation_axis Whether to plot the line of translation, from AC to H.
+#' @param add_density Whether to add a 2d density to the plot, in addition to the points.
 #' @return The triangle plot.
 #' @export
 triangle_plot = function (tri_data, tri_cols, tri_labs = NULL, plot_translation_axis = F, add_density = T) {

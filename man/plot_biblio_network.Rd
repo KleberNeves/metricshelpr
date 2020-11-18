@@ -15,7 +15,6 @@ plot_biblio_network(
   label_size = 4,
   edge_size = c(0.2, 1),
   node_size = c(2, 10),
-  aes_color = NULL,
   min_degree = 1,
   get_network = FALSE
 )

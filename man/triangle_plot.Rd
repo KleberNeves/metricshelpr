@@ -20,6 +20,8 @@ triangle_plot(
 \item{tri_labs}{The name of the axes (if NULL, defaults to the same name as the columns).}
 
 \item{plot_translation_axis}{Whether to plot the line of translation, from AC to H.}
+
+\item{add_density}{Whether to add a 2d density to the plot, in addition to the points.}
 }
 \value{
 The triangle plot.
