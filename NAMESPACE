@@ -3,6 +3,7 @@
 export(biomed_triangle_plot)
 export(codify_triangle_categories)
 export(cognitiveCareerPlot)
+export(collapse_author_names)
 export(count_data_for_triangle)
 export(extract_author_affiliations)
 export(extract_author_country_order)

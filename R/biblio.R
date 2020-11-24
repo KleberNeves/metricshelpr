@@ -285,3 +285,26 @@ extract_author_affiliations = function (M) {
 
   author_country_data
 }
+
+
+
+#' Collapses multiple author names into a single one
+#'
+#' When authors have multiple names, you can use this function to search and
+#' replace through the AU field and return a version that collapses all occurrences
+#' into a single one.
+#'
+#' @param M A bibliometrix dataset.
+#' @param alternatives A character vector with the multiple names.
+#' @param unique_name The preferred name into which all other will be turned.
+#' @return A character vector, same as AU, but with the names replaced.
+#' @export
+collapse_author_names <- function(M, alternatives, unique_name) {
+  collapsed_author_names = purrr::map_chr(M$AU, function (author_list) {
+    purrr::walk(alternatives, function (alternative_name) {
+      author_list <<- stringr::str_replace_all(author_list, alternative_name, unique_name)
+    })
+    author_list
+  })
+  collapsed_author_names
+}
