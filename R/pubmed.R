@@ -48,7 +48,7 @@ get.full.mesh = function(pmids) {
       MeshFullTerms = paste(x$FullTerm, collapse = ";")
       MeshHeadings = paste(unique(x$Heading2), collapse = ";")
 
-      data.frame(MeshFullTerms, MeshHeadings)
+      data.frame(MeshFullTerms, MeshHeadings, stringsAsFactors = F)
     })
     D2$pmid = unlist(record.part@PMID)
     D2
