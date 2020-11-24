@@ -341,10 +341,16 @@ plot_rpys = function (df, bar_color, title) {
 #' @param M A bibliometrix M data frame.
 #' @param title The plot title.
 #' @param n_words Number of words to include (most frequent ones).
+#' @param type Which keywords to use. Can be "keywords" to use the ID field or "mesh" to use the MeshHeadings field (obtained from PubMed beforehand).
 #' @return A ggplot object.
 #' @export
-plot_keywordcloud = function (M, title, n_words = 70) {
-  words = M$ID %>%
+plot_keywordcloud = function (M, title, n_words = 70, type = "keywords") {
+  if (type == "keywords") {
+    target_col = M$ID
+  } else if (type == "mesh") {
+    target_col = M$MeshHeadings
+  }
+  words = target_col %>%
     stringr::str_split(";") %>%
     unlist() %>%
     data.frame(word = .) %>%

@@ -4,7 +4,7 @@
 \alias{plot_keywordcloud}
 \title{Plots a wordcloud of keywords}
 \usage{
-plot_keywordcloud(M, title, n_words = 70)
+plot_keywordcloud(M, title, n_words = 70, type = "keywords")
 }
 \arguments{
 \item{M}{A bibliometrix M data frame.}
@@ -12,6 +12,8 @@ plot_keywordcloud(M, title, n_words = 70)
 \item{title}{The plot title.}
 
 \item{n_words}{Number of words to include (most frequent ones).}
+
+\item{type}{Which keywords to use. Can be "keywords" to use the ID field or "mesh" to use the MeshHeadings field (obtained from PubMed beforehand).}
 }
 \value{
 A ggplot object.
