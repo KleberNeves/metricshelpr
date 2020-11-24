@@ -9,9 +9,7 @@
 #' @export
 read_vos_cluster_gml = function (gml_file) {
 
-  vosnet = igraph::read_graph("net1.gml", format = "gml")
-
-  f = file("net1.gml")
+  f = file(gml_file)
   content = readr::read_lines(f)
 
   node_lines = stringr::str_which(content, "node")
