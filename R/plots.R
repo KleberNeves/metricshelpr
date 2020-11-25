@@ -348,7 +348,7 @@ plot_keywordcloud = function (M, title, n_words = 70, type = "keywords") {
   if (type == "keywords") {
     target_col = M$ID
   } else if (type == "mesh") {
-    target_col = M$MeshHeadings
+    target_col = M$MeshHeadings[M$MeshHeadings != "No Mesh Terms"]
   }
   words = target_col %>%
     stringr::str_split(";") %>%
