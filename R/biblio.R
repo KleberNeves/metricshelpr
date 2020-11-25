@@ -283,6 +283,9 @@ extract_author_affiliations = function (M) {
     RR
   })
 
+  author_country_data$Institution = stringr::str_extract(author_country_data$Affiliation, ".+?,") %>%
+    stringr::str_remove(",")
+
   author_country_data
 }
 
