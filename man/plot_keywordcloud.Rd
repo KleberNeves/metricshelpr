@@ -4,7 +4,13 @@
 \alias{plot_keywordcloud}
 \title{Plots a wordcloud of keywords}
 \usage{
-plot_keywordcloud(M, title, n_words = 70, type = "keywords")
+plot_keywordcloud(
+  M,
+  title,
+  n_words = 70,
+  type = "keywords",
+  excluded_terms = c()
+)
 }
 \arguments{
 \item{M}{A bibliometrix M data frame.}
@@ -14,6 +20,8 @@ plot_keywordcloud(M, title, n_words = 70, type = "keywords")
 \item{n_words}{Number of words to include (most frequent ones).}
 
 \item{type}{Which keywords to use. Can be "keywords" to use the ID field or "mesh" to use the MeshHeadings field (obtained from PubMed beforehand).}
+
+\item{excluded_terms}{Terms to exclude from the word cloud. Will be converted to uppercase. Default is empty. If you pass "mesh*", it will exclude c("Humans","Male","Female","Adult").}
 }
 \value{
 A ggplot object.

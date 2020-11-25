@@ -342,15 +342,22 @@ plot_rpys = function (df, bar_color, title) {
 #' @param title The plot title.
 #' @param n_words Number of words to include (most frequent ones).
 #' @param type Which keywords to use. Can be "keywords" to use the ID field or "mesh" to use the MeshHeadings field (obtained from PubMed beforehand).
+#' @param excluded_terms Terms to exclude from the word cloud. Will be converted to uppercase. Default is empty. If you pass "mesh*", it will exclude c("Humans","Male","Female","Adult").
 #' @return A ggplot object.
 #' @export
-plot_keywordcloud = function (M, title, n_words = 70, type = "keywords") {
+plot_keywordcloud = function (M, title, n_words = 70, type = "keywords", excluded_terms = c()) {
   if (type == "keywords") {
     target_col = M$ID
   } else if (type == "mesh") {
     target_col = M$MeshHeadings[M$MeshHeadings != "No Mesh Terms"] %>%
       stringr::str_to_upper()
   }
+
+  if (excluded_terms == "mesh*") {
+    excluded_terms = c("Humans", "Male", "Female", "Adult")
+  }
+  target_col = target_col[!(target_col %in% stringr::str_to_upper(excluded_terms))]
+
   words = target_col %>%
     stringr::str_split(";") %>%
     unlist() %>%
