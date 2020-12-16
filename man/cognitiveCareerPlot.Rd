@@ -9,7 +9,8 @@ cognitiveCareerPlot(
   base.size = 10,
   n = 20,
   periods = NULL,
-  period.names = NULL
+  period.names = NULL,
+  special_papers = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ cognitiveCareerPlot(
 \item{periods}{A numeric vector of years to add vertical lines and divide periods}
 
 \item{period.names}{A vector of names for the periods}
+
+\item{special_papers}{The name of a logical column in M. If provided, the papers which are TRUE for this column will be highlighted in red.}
 }
 \value{
 A plot of the cogntive career.

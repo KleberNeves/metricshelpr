@@ -9,10 +9,11 @@
 #' @param n The maximum number of papers to include
 #' @param periods A numeric vector of years to add vertical lines and divide periods
 #' @param period.names A vector of names for the periods
+#' @param special_papers The name of a logical column in M. If provided, the papers which are TRUE for this column will be highlighted in red.
 #' @return A plot of the cogntive career.
 #' @importFrom magrittr %>%
 #' @export
-cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period.names = NULL) {
+cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period.names = NULL, special_papers = NULL) {
   # Filter the papers that will appear, if not showing all of them.
   if (nrow(M) > n) {
     # Possibilidade: incluir todas as revisões, porque elas são marcos
@@ -24,8 +25,16 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
     # Picks the most cited overall
     topall = (M %>% dplyr::filter(!(DI %in% topyear)) %>% dplyr::top_n(k,TC))$DI
 
+    # Picks the special ones
+    special_dois = c()
+    if (!is.null(special_papers)) {
+      special_ones = M[M[[special_papers]],]
+      special_dois = special_ones$DI
+      special_names = stringr::str_to_upper(special_ones$TI)
+    }
+
     # Filters
-    toinclude = unique(c(topyear, topall))
+    toinclude = unique(c(topyear, topall, special_dois))
     M = M[M$DI %in% toinclude, ]
   }
 
@@ -34,6 +43,7 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   bsk = igraph::graph_from_adjacency_matrix(ADJ)
 
   # Creates the layout from graphs, to be able to specify positioning of nodes
+  igraph::E(bsk)$weight = igraph::count_multiple(bsk)
   bsk = igraph::simplify(bsk, remove.multiple = T, remove.loops = T)
   layout_m = ggraph::create_layout(bsk, layout = "auto")
 
@@ -42,7 +52,6 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   Years = layout_m$Year
 
   # Defines size of nodes
-  # layout_m$node.size = 10 * (base.size + 2 * base.size * M$TC / max(M$TC))
   # TODO for some reason, setting node.size via aes(size = node.size) from layout_m does not work
   igraph::V(bsk)$node.size = (base.size / 2 + 2 * base.size * M$TC / max(M$TC))
 
@@ -82,6 +91,10 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   layout_m$y = layout_m$py * pheight + stats::rnorm(nrow(layout_m), 0, layout_m$py * 1.5)
   layout_m$y = layout_m$y - min(layout_m$y)
 
+  if (!is.null(special_papers)) {
+    layout_m$contour = ifelse(layout_m$id %in% special_names, 1.5, 0.5)
+  }
+
   # Builds ggplot
   g = ggraph::ggraph(layout_m)
 
@@ -90,11 +103,14 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
   }
 
   g = g +
-    ggraph::geom_edge_link(width = 1, check_overlap = T, edge_alpha = 0.8, color = "grey") +
-    ggraph::geom_node_point(ggplot2::aes(color = as.factor(cluster)), size = igraph::V(bsk)$node.size, alpha = 0.8) +
-    ggraph::geom_node_text(ggplot2::aes(label = name.label), size = 2.2,
-                   repel = F, color = "black", alpha = 1) +
-    ggplot2::scale_x_continuous(labels = as.character(seq(min(Years), max(Years))), breaks = seq(min(Years), max(Years)), expand = c(.1, .1)) +
+    ggraph::geom_edge_link(aes(edge_alpha = igraph::E(bsk)$weight, width = igraph::E(bsk)$weight,), check_overlap = T, color = "grey") +
+    ggraph::geom_node_point(shape = 21, ggplot2::aes(fill = as.factor(cluster), color = as.factor(contour)), size = igraph::V(bsk)$node.size, alpha = 0.8, stroke = layout_m$contour) +
+    ggraph::geom_node_text(ggplot2::aes(label = name.label), size = 2,
+                           repel = F, color = "black", alpha = 1) +
+    ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(n = (max(Years) - min(Years))/2), expand = c(.1, .1)) +
+    ggplot2::scale_color_manual(values = c("black", "red")) +
+    ggraph::scale_edge_alpha_continuous(range = c(0.2, 1)) +
+    ggraph::scale_edge_width_continuous(range = c(0.5, 2.5)) +
     ggplot2::labs(title = "Cognitive Career Plot (Reference Coupling)", x = "", y = "")
 
   # Adicionar retângulos e nomes de períodos
@@ -104,9 +120,9 @@ cognitiveCareerPlot = function(M, base.size = 10, n = 20, periods = NULL, period
     for (i in 1:(length(periods)-1)) {
       g = g +
         ggplot2::annotate("rect", xmin = periods[i], ymin = (tly),
-                 xmax = periods[i+1], ymax = (tly*0.98), fill = "grey80", color = "black") +
+                          xmax = periods[i+1], ymax = (tly*0.98), fill = "grey80", color = "black") +
         ggplot2::annotate("text", label = period.names[i], x = (periods[i] + periods[i+1]) / 2,
-                 y = (tly * 0.95), size = 3)
+                          y = (tly * 0.95), size = 3)
     }
   }
 
